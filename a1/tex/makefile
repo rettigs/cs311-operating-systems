@@ -1,4 +1,4 @@
-TARGET=template
+TARGET=surface_integral
 HTML=main_html
 SRC={$TARGET}
 
