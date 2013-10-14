@@ -62,7 +62,26 @@ def a3():
         print total
 
 def a4():
-        print("derp4")
+        words = open("words.txt", "r").read()[1:-1].split("\",\"")
+        count = 0
+        for wordi in xrange(len(words)):
+                subscore = 0
+                for letteri in xrange(len(words[wordi])):
+                        subscore = subscore + ord(words[wordi][letteri]) - 64
+                #is_tri_num = False
+                if subscore in gen_tri_nums(subscore):
+                        count = count + 1
+                        #is_tri_num = True
+                #print "Word: %s\tSubscore: %s\tTriangle number: %s" % (words[wordi], subscore, is_tri_num)
+        print count
+
+def gen_tri_nums(max_num):
+        numlist = [1]
+        i = 2;
+        while numlist[-1] < max_num:
+                numlist.append(i * (i + 1) / 2)
+                i = i + 1
+        return numlist
 
 if __name__ == '__main__':
         main()
