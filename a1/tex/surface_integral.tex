@@ -40,7 +40,7 @@
   colorlinks = true,
   urlcolor = black,
   pdfauthor = {\name},
-  pdfkeywords = {cs311 ``operating systems'' files filesystem I/O},
+  pdfkeywords = {cs311 ``operating systems''},
   pdftitle = {CS 311 Project},
   pdfsubject = {CS 311 Project},
   pdfpagemode = UseNone
@@ -75,8 +75,8 @@ where \(\mathbf{T}_u\) and \(\mathbf{T}_v\) are tangent vectors and a \(\times\)
 For a vector function over a surface, the surface integral is given by
 \\
 \begin{eqnarray}
-  \Phi =& \displaystyle\int_S \mathbf{F} \times \ \D \mathbf{a} \\
-  =& \displaystyle\int_S f(u, v)|\mathbf{T}_u \times \mathbf{T}_v|\ \D u \ \D v \\
+  \Phi =& \displaystyle\int_S \mathbf{F} \cdot \ \D \mathbf{a} \\
+  =& \displaystyle\int_S (\mathbf{F} \cdot \mathbf{\hat{n}}) \ \D a \\
   =& \displaystyle\int_S f(u, v)|\mathbf{T}_u \times \mathbf{T}_v|\ \D u \ \D v
 \end{eqnarray}
 \\
@@ -93,15 +93,17 @@ If the surface is \emph{surface parameterized} using \emph{u} and \emph{v}, then
 \end{eqnarray}
 \\
 
+\newpage
+
 \section*{Maxwell's Equations}
 \addtocounter{section}{1}
 \hrule
 
-\centerline{\includegraphics[width=0.5\textwidth]{maxwell.eps}}
+\centerline{\includegraphics[width=0.75\textwidth]{maxwell.eps}}
 
-\subsection{Integral form}
+\subsection*{Integral form}
 
-\subsection{Differential form}
+\subsection*{Differential form}
 
 \newpage
 
