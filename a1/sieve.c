@@ -3,7 +3,9 @@
 #include <math.h>
 #include "sieve.h"
 
-primes sieve (int n)
+/* Compiled with "gcc sieve.c -o sieve -lm" */
+
+primes * sieve (int n)
 {
 
         /* Make primes struct */
@@ -15,6 +17,10 @@ primes sieve (int n)
         
         /* Fill a working array with integers from 1 to n (index at 0 will remain blank) */
         int *values = malloc(sizeof(int) * (n + 1));
+        int i;
+        for(i = 1; i <= n; i++){
+                values[i] = i;
+        }
 
         /* Mark the number 1 as special */
         values[1] = 0;
@@ -24,31 +30,33 @@ primes sieve (int n)
         for(k = 1; k <= sqrt(n); k++){
                 /* Find first number in the array m greater than k that has not been identified as composite */
                 int m = k + 1;
-                while(values[m] == 0){
-                        m++;
-                }
 
                 /* Mark multiples of m as composite */
                 int i;
                 for(i = 2; i*m <= n; i++){
                         values[i*m] = 0;
                 }
+        }
 
-                /* Put m on list of primes */
-                p->values[p->size] = m;
-                p->size++;
-
-                k = m;
+        /* Add all left over numbers to the list of primes */
+        i;
+        for(i = 1; i < n; i++){
+                if(values[i] != 0){
+                        p->values[p->size] = values[i];
+                        p->size++;
+                }
         }
 
         return p;
 }
 
 int main (int argc, const char * argv[]) {
-        primes p = sieve(20);
+        primes *p = sieve(100);
         int i;
+
+        printf("primes: %d\n", p->size);
         for(i = 0; i < p->size; i++){
-                printf("%d", p->values[i]);
+                printf("%d\n", p->values[i]);
         }
 
         return 0;
