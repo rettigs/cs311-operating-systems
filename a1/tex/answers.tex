@@ -1,0 +1,99 @@
+\documentclass[letterpaper,10pt,fleqn]{article}
+
+%example of setting the fleqn parameter to the article class -- the below sets the offset from flush left (fl)
+\setlength{\mathindent}{1cm}
+
+\usepackage{graphicx}                                        
+
+\usepackage{amssymb}                                         
+\usepackage{amsmath}                                         
+\usepackage{amsthm}                                          
+
+\usepackage{alltt}                                           
+\usepackage{float}
+\usepackage{color}
+
+\usepackage{balance}
+\usepackage[TABBOTCAP, tight]{subfigure}
+\usepackage{enumitem}
+
+\usepackage{pstricks, pst-node}
+
+%the following sets the geometry of the page
+\usepackage{geometry}
+\geometry{textheight=9in, textwidth=6.5in}
+
+% random comment
+
+\newcommand{\cred}[1]{{\color{red}#1}}
+\newcommand{\cblue}[1]{{\color{blue}#1}}
+
+\usepackage{hyperref}
+
+\usepackage{textcomp}
+\usepackage{listings}
+
+\usepackage{wasysym}
+
+\def\name{Sean Rettig}
+
+%% The following metadata will show up in the PDF properties
+\hypersetup{
+  colorlinks = true,
+  urlcolor = black,
+  pdfauthor = {\name},
+  pdfkeywords = {cs311 ``operating systems''},
+  pdftitle = {CS 311 Project},
+  pdfsubject = {CS 311 Project},
+  pdfpagemode = UseNone
+}
+
+\parindent = 0.0 in
+\parskip = 0.2 in
+
+\pagestyle{empty}
+
+\numberwithin{equation}{section}
+
+\newcommand{\D}{\mathrm{d}}
+
+\newcommand\invisiblesection[1]{%
+  \refstepcounter{section}%
+  \addcontentsline{toc}{section}{\protect\numberline{\thesection}#1}%
+  \sectionmark{#1}}
+
+\begin{document}
+
+%to remove page numbers, set the page style to empty
+
+\section*{Assignment 1}
+\hrule
+
+\begin{enumerate}
+\item scp and rsync
+\item Revision control systems allow for changes to a set of files to be tracked so that they can be easily reviewed, applied, reverted, etc.  You can create a git repo in your current directory with the command "git init".
+\item Redirection allows a program's input and/or output to be read from and/or written to a file, respectively.  Piping allows one program to read the output of another program as input.
+\item Make is tool that can be used to build programs automatically.  It is useful because it saves time and effort when developing and/or deploying software and helps prevent human error during the build process.
+\item Makefiles consist of five different things:
+\begin{itemize}
+\item Explicit rules, which describe how to process specific targets.  Syntax:
+\begin{verbatim}
+targets : prerequisites
+        recipe
+        ...
+\end{verbatim}
+or
+\begin{verbatim}
+targets : prerequisites ; recipe
+        recipe
+        ...
+\end{verbatim}
+\item Implicit rules, which describe how to process targets based on file names.
+\item Variable definitions, which store strings that can be used in the text later.
+\item Directives, which instruct make to perform special actions.
+\item Comments, which can be used to describe what is happening within the makefile. All text after a # up to the end of the line is considered to be a comment. A literal # can be escaped with a \, and a trailing \ after a comment lets it continue to the next line.
+\end{itemize}
+\item \begin{verbatim}find . -type f -exec file '{}' \;\end{verbatim} (from the man page)
+\end{enumerate}
+
+\end{document}
