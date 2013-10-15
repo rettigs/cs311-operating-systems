@@ -5,13 +5,13 @@ CXXFLAGS = -Wall -openmp -O3 -g
 #overkill on the flags, but that doesn't hurt anything
 LDFLAGS = -lrt -lpthread 
 #replace this if you want to change the output name
-TARGET = example
+TARGET = sieve
 
 #any headers go here
 INCLUDES = 
 
 #any .c or .cpp files go here
-SOURCE = example.c
+SOURCE = sieve.c
 
 #default is to compile
 default:	compile

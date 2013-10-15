@@ -1,61 +1,55 @@
-/*
- * Original Author: Sean Rettig (rettigs)
- * File: HW2rettigs_14.java
- * Created: Feb 15th 2012 by rettigs
- * Last Modified: Feb 16th 2012 by rettigs
- *
- * This class implements the Sieve of Eratosthenes, a method used to find all prime numbers under a certain value (referred to by this program as the max).
- */
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+#include "sieve.h"
 
-public class HW2rettigs_14{
+primes sieve (int n)
+{
 
-        /*
-         * This method implements the Sieve of Eratosthenes, a method used to find all prime numbers under a certain value (referred to by this program as the max).
-         * It takes the max as an argument, and prints all of the primes numbers equal to or below the max, in addition to the number of prime numbers.
-         */
-        public static void main(String[] args){
+        /* Make primes struct */
+        primes *p = malloc(sizeof(primes));
 
-                //Gets the max number to check.
-                int max;
-                try{
-                         max = Integer.parseInt(args[0]);
-                }catch(Exception e){
-                        System.out.printf("No integer specified as argument for max prime size. Program terminated.");
-                        return;
+        /* We don't know how many primes there will be, so we set a reasonable upper bound as the array size */
+        p->values = malloc(sizeof(int) * sqrt(n));
+        p->size = 0;
+        
+        /* Fill a working array with integers from 1 to n (index at 0 will remain blank) */
+        int *values = malloc(sizeof(int) * (n + 1));
+
+        /* Mark the number 1 as special */
+        values[1] = 0;
+
+        /* Mark all multiples of composite numbers as 0, starting with the number 2 */
+        int k;
+        for(k = 1; k <= sqrt(n); k++){
+                /* Find first number in the array m greater than k that has not been identified as composite */
+                int m = k + 1;
+                while(values[m] == 0){
+                        m++;
                 }
 
-                //Fills an array with all integers from 2 to the max, where each integer value is equal to its array index number. I allow index locations 0 and 1 to default to 0,
-                //because they are special numbers that are not used in the prime number calculation, and I use the number 0 to denote numbers in the array which are not prime.
-                int[] numbers = new int[max + 1];
-                for(int i = 2; i <= max; ++i){
-                        numbers[i] = i;
+                /* Mark multiples of m as composite */
+                int i;
+                for(i = 2; i*m <= n; i++){
+                        values[i*m] = 0;
                 }
 
-                //Sets all non-prime numbers in the array to 0, checking for non-primes by eliminating multiples of all previously established primes (starting with 2).
-                for(int i = 2; i <= max; ++i){
-                        if(numbers[i] != 0){
-                                int multiple = 0;
-                                int count = 2;
-                                while(true){
-                                        multiple = numbers[i] * count;
-                                        try{
-                                                numbers[multiple] = 0;
-                                        }catch(ArrayIndexOutOfBoundsException e){
-                                                break; //Stops checking for multiples of established primes to eliminate once the max has been hit, and moves on to the next prime.
-                                        }
-                                        ++count;
-                                }
-                        }
-                }
+                /* Put m on list of primes */
+                p->values[p->size] = m;
+                p->size++;
 
-                //Prints all numbers in the array that are not 0 (i.e. only prime numbers). Also prints the number of primes.
-                int numberOfPrimes = 0;
-                for(int i = 0; i <= max; ++i){
-                        if(numbers[i] != 0){
-                                System.out.printf("%d\n", numbers[i]);
-                                ++numberOfPrimes;
-                        }
-                }
-                System.out.printf("Number of primes: %d\n", numberOfPrimes);
+                k = m;
         }
+
+        return p;
+}
+
+int main (int argc, const char * argv[]) {
+        primes p = sieve(20);
+        int i;
+        for(i = 0; i < p->size; i++){
+                printf("%d", p->values[i]);
+        }
+
+        return 0;
 }
