@@ -33,6 +33,8 @@
 \usepackage{textcomp}
 \usepackage{listings}
 
+\usepackage{wasysym}
+
 \def\name{Sean Rettig}
 
 %% The following metadata will show up in the PDF properties
@@ -63,34 +65,42 @@
 \addtocounter{section}{1}
 \hrule
 
-For a scalar function f over a surface parameterized by u and v, the surface integral is given by
+For a scalar function \(f\) over a surface parameterized by u and v, the surface integral is given by
 \\
-\begin{eqnarray}
-  \Phi =& \displaystyle\int_S f\ \D a \\
-  =& \displaystyle\int_S f(u, v)|\mathbf{T}_u \times \mathbf{T}_v|\ \D u \ \D v
-\end{eqnarray}
+\\
+\begin{align}
+  \Phi =& \displaystyle\int_S f \ \! \D a \\
+  =& \displaystyle\int_S f(u, v)|\mathbf{T}_u \times \mathbf{T}_v| \ \! \D u \ \! \D v
+\end{align}
+\\
 \\
 where \(\mathbf{T}_u\) and \(\mathbf{T}_v\) are tangent vectors and a \(\times\) b is the corss product.
 
 For a vector function over a surface, the surface integral is given by
 \\
-\begin{eqnarray}
+\\
+\begin{align}
   \Phi =& \displaystyle\int_S \mathbf{F} \cdot \ \D \mathbf{a} \\
   =& \displaystyle\int_S (\mathbf{F} \cdot \mathbf{\hat{n}}) \ \D a \\
   =& \displaystyle\int_S f(u, v)|\mathbf{T}_u \times \mathbf{T}_v|\ \D u \ \D v
-\end{eqnarray}
+\end{align}
 \\
-where \textbf{a \(\cdot\) b} is a dot product and \textbf{\^n} is a unit normal vector. If \(z = f(x, y)\), the d\textbf{a} is given explicitly by
 \\
-\begin{eqnarray}
+where \(\mathbf{a \cdot b}\) is a dot product and \(\mathbf{\hat{n}}\) is a unit normal vector. If \(z \! = \! f(x, y)\), the d\textbf{a} is given explicitly by
+\\
+\\
+\begin{align}
   \D \mathbf{a} =& \pm \displaystyle(-\frac{\partial z}{\partial x}\mathbf{^x} - \frac{\partial z}{\partial y}\mathbf{^y} + \mathbf{^z}) \D x \ \D y
-\end{eqnarray}
+\end{align}
+\\
 \\
 If the surface is \emph{surface parameterized} using \emph{u} and \emph{v}, then
 \\
-\begin{eqnarray}
+\\
+\begin{align}
   =& \displaystyle\int_S f(u, v)|\mathbf{T}_u \times \mathbf{T}_v|\ \D u \ \D v
-\end{eqnarray}
+\end{align}
+\\
 \\
 
 \newpage
@@ -98,10 +108,15 @@ If the surface is \emph{surface parameterized} using \emph{u} and \emph{v}, then
 \section*{Maxwell's Equations}
 \addtocounter{section}{1}
 \hrule
-
+\phantom{A}
 \centerline{\includegraphics[width=0.75\textwidth]{maxwell.eps}}
 
 \subsection*{Integral form}
+
+\begin{align}
+  \oiint_{\partial\Sigma} \mathbf{E} \cdot d\mathbf{S} =& a \\
+  \oint_{\partial\Sigma} \mathbf{B} \cdot \D \ell =& \displaystyle\int_S \mathbf{F} \cdot \ \D \mathbf{a}
+\end{align}
 
 \subsection*{Differential form}
 
