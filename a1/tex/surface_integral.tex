@@ -57,6 +57,11 @@
 
 \newcommand{\D}{\mathrm{d}}
 
+\newcommand\invisiblesection[1]{%
+  \refstepcounter{section}%
+  \addcontentsline{toc}{section}{\protect\numberline{\thesection}#1}%
+  \sectionmark{#1}}
+
 \begin{document}
 
 %to remove page numbers, set the page style to empty
@@ -74,15 +79,15 @@ For a scalar function \(f\) over a surface parameterized by u and v, the surface
 \end{align}
 \\
 \\
-where \(\mathbf{T}_u\) and \(\mathbf{T}_v\) are tangent vectors and a \(\times\) b is the corss product.
+where \(\mathbf{T}_u\) and \(\mathbf{T}_v\) are tangent vectors and \(a \times b\) is the corss product.
 
 For a vector function over a surface, the surface integral is given by
 \\
 \\
 \begin{align}
   \Phi =& \displaystyle\int_S \mathbf{F} \cdot \ \D \mathbf{a} \\
-  =& \displaystyle\int_S (\mathbf{F} \cdot \mathbf{\hat{n}}) \ \D a \\
-  =& \displaystyle\int_S f(u, v)|\mathbf{T}_u \times \mathbf{T}_v|\ \D u \ \D v
+  =& \displaystyle\int_S \ \! (\mathbf{F} \cdot \mathbf{\hat{n}}) \ \D a \\
+  =& \displaystyle\int_S f_x \ \! \D y \ \! \D z + f_y \ \! \D z \ \! \D x + f_z \ \! \D x \ \! \D y
 \end{align}
 \\
 \\
@@ -90,7 +95,7 @@ where \(\mathbf{a \cdot b}\) is a dot product and \(\mathbf{\hat{n}}\) is a unit
 \\
 \\
 \begin{align}
-  \D \mathbf{a} =& \pm \displaystyle(-\frac{\partial z}{\partial x}\mathbf{^x} - \frac{\partial z}{\partial y}\mathbf{^y} + \mathbf{^z}) \D x \ \D y
+  \D \mathbf{a} =& \pm \left(-\frac{\partial z}{\partial x}\mathbf{\hat{x}} - \frac{\partial z}{\partial y}\mathbf{\hat{y}} + \mathbf{\hat{z}}\right) \ \! \D x \ \! \D y
 \end{align}
 \\
 \\
@@ -98,15 +103,16 @@ If the surface is \emph{surface parameterized} using \emph{u} and \emph{v}, then
 \\
 \\
 \begin{align}
-  =& \displaystyle\int_S f(u, v)|\mathbf{T}_u \times \mathbf{T}_v|\ \D u \ \D v
+  \Phi =& \displaystyle\int_S \mathbf{F} \cdot (\mathbf{T}_u \times \mathbf{T}_v) \ \D u \ \! \D v.
 \end{align}
 \\
 \\
 
 \newpage
 
+%This dirty hack is needed because section* does not increment the counter, addtocounter doesn't reset the subsection numbering, and setcounter{subsection}{2} has no effect whatsoever.  Sigh.
+\invisiblesection{}
 \section*{Maxwell's Equations}
-\addtocounter{section}{1}
 \hrule
 \phantom{A}
 \centerline{\includegraphics[width=0.75\textwidth]{maxwell.eps}}
@@ -114,11 +120,20 @@ If the surface is \emph{surface parameterized} using \emph{u} and \emph{v}, then
 \subsection*{Integral form}
 
 \begin{align}
-  \oiint_{\partial\Sigma} \mathbf{E} \cdot d\mathbf{S} =& a \\
-  \oint_{\partial\Sigma} \mathbf{B} \cdot \D \ell =& \displaystyle\int_S \mathbf{F} \cdot \ \D \mathbf{a}
+  \oiint_{\partial\Omega} \mathbf{E} \cdot d\mathbf{S} =& \ \! \frac{1}{\varepsilon_0} \iiint_\Omega \rho \ \! \D V \\
+  \oiint_{\partial\Omega} \mathbf{B} \cdot d\mathbf{S} =& \ \! 0 \\
+  \oint_{\partial\Sigma} \mathbf{E} \cdot \D \ell =& - \! \frac{d}{dt} \iint_\Sigma \mathbf{B} \cdot \D \mathbf{S} \\
+  \oint_{\partial\Sigma} \mathbf{B} \cdot \D \ell =& \ \! \mu_0 \iint_\Sigma \left(\mathbf{J} + \varepsilon_0 \frac{\partial \mathbf{E}}{\partial t} \right) \cdot \D \mathbf {S}
 \end{align}
 
 \subsection*{Differential form}
+
+\begin{align}
+  \nabla \cdot \mathbf{E} =& \ \! \frac{\rho}{\varepsilon_0} \\
+  \nabla \cdot \mathbf{B} =& \ \! 0 \\
+  \nabla \times \mathbf{E} =& \ \! - \! \frac{\partial \mathbf{B}}{\partial t} \\
+  \nabla \times \mathbf{B} =& \ \! \mu_0 \left( \mathbf{J} + \varepsilon_0 \frac{\partial \mathbf{E}}{\partial t}\right)
+\end{align}
 
 \newpage
 
@@ -138,7 +153,7 @@ Repeated offenses will result in no credit for the assignment.
 \item Compilation will be on os-class. This server is the final say on whether your code compiles.
 \item No directories in you submissions. You will be penalized for including any sort of hierarchy.
 \item All assignments submitted to TEACH. No late submissions will be accepted via TEACH.
-\item Naming convention: CS311\_proj\textless{}x\textgreater{}\_\textless{}engr\_username\textgreater{}.tar.bz2. Fill in \textless{}\textgreater{} with appropriate values.
+\item Naming convention: CS311\_proj\(\langle\)x\(\rangle\)\_\(\langle\)engr\_username\(\rangle\).tar.bz2. Fill in \(\langle\)\(\rangle\) with appropriate values.
 \item No zip files will be accepted. You must use bzipped tar files.
 \item All non-code documents must be created with LaTeX, by hand. This will be discussed in class.
 \item All work must be done individually unless specifically allowed to work in groups.
