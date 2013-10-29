@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <string.h>
 #include <ar.h>
 #include "myar.h"
 
@@ -62,7 +63,7 @@ int main(int argc, char *argv[])
         /* Perform the action indicated by the given flag. */
         if (q) fq(argc2, argv2);
         else if (x) fx(argc2, argv2);
-        else if (t) ft(argc2, argv2);
+        else if (t) ft(argc2, argv2, v);
         else if (d) fd(argc2, argv2);
         else if (A) fA(argc2, argv2);
         else if (w) fw(argc2, argv2);
@@ -78,41 +79,84 @@ void usage()
         exit(EXIT_FAILURE);
 }
 
-/* Print table of contents */
+/* Print given error message and exit */
+void error(char *message)
+{
+        perror(message);
+        exit(EXIT_FAILURE);
+}
+
+/* Verifies the header of a file to check if it's an archive file */
+void isar(int fd)
+{
+      char buf[SARMAG];
+      if(read(fd, buf, SARMAG) != SARMAG) error("Could not read archive");
+      if(strcmp(buf, ARMAG) != 0) error("No archive speoified");    
+}
+
+/* Removes '/'s from the given char array */
+char* rslash(char name[], int len)
+{
+        for (int i = 0; i < len; i++) {
+                if (name[i] == '/') name[i] = '\0';
+        }
+        return name;
+}
+
+/* Quickly append named files to archive */
 void fq(int argc, char *argv[])
 {
         if (argc < 2) usage();
 }
 
-/* Print table of contents */
+/* Extract named files */
 void fx(int argc, char *argv[])
 {
         
 }
 
-/* Print table of contents */
-void ft(int argc, char *argv[])
+/* Print a concise table of contents of the archive */
+void ft(int argc, char *argv[], int v)
 {
         if (argc != 1) usage();
+        
+        int arfd = open(argv[0], O_RDONLY);
 
-        for(int i = 0; i < argc; i++){
-                printf("%s\n", argv[i]);
+        if (arfd == -1) error("Could not open archive");
+
+        isar(arfd);
+        
+        struct ar_hdr *hdrbuf = malloc(sizeof(struct ar_hdr));
+        while (1){
+                int bytes_read = read(arfd, hdrbuf, sizeof(struct ar_hdr));
+                if (bytes_read == -1) error("Error reading archive");
+                if (bytes_read != sizeof(struct ar_hdr)) break; //We have hit the end of the file.
+                if (v){
+                        
+                } else {
+                        printf("%.*s\n", 16, rslash(hdrbuf->ar_name, 16));
+                }
+                char *arname = hdrbuf->ar_name;
+                int filesize = (int) strtol(hdrbuf->ar_size, hdrbuf->ar_size + 9, 10);
+                lseek(arfd, filesize + filesize % 2, SEEK_CUR); //Skip to the next file header, taking odd-length file newline padding into account.
         }
+
+        close(arfd);
 }
 
-/* Print table of contents */
+/* Delete named files from archive */
 void fd(int argc, char *argv[])
 {
         
 }
 
-/* Print table of contents */
+/* Quickly append all regular files in the current directory (except the archive itself) */
 void fA(int argc, char *argv[])
 {
         
 }
 
-/* Print table of contents */
+/* For a given timeout, add all modified files to the archive (except the archive itself) */
 void fw(int argc, char *argv[])
 {
         
