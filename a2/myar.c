@@ -1,4 +1,5 @@
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <stdio.h>
@@ -8,6 +9,9 @@
 #include <string.h>
 #include <ar.h>
 #include "myar.h"
+
+#define FP_SPECIAL 1
+#define STR_SIZE sizeof("rwxrwxrwx")
 
 char *name; /* Name of the program */
 
@@ -97,6 +101,26 @@ char* rslash(char name[], int len)
         return name;
 }
 
+/* Return ls(1)-style string for file permissions mask */
+char * file_perm_string(mode_t perm, int flags)
+{
+        static char str[STR_SIZE];
+        snprintf(str, STR_SIZE, "%c%c%c%c%c%c%c%c%c",
+                (perm & S_IRUSR) ? 'r' : '-', (perm & S_IWUSR) ? 'w' : '-',
+                (perm & S_IXUSR) ?
+                        (((perm & S_ISUID) && (flags & FP_SPECIAL)) ? 's' : 'x') :
+                        (((perm & S_ISUID) && (flags & FP_SPECIAL)) ? 'S' : '-'),
+                (perm & S_IRGRP) ? 'r' : '-', (perm & S_IWGRP) ? 'w' : '-',
+                (perm & S_IXGRP) ?
+                        (((perm & S_ISGID) && (flags & FP_SPECIAL)) ? 's' : 'x') :
+                        (((perm & S_ISGID) && (flags & FP_SPECIAL)) ? 'S' : '-'),
+                (perm & S_IROTH) ? 'r' : '-', (perm & S_IWOTH) ? 'w' : '-',
+                (perm & S_IXOTH) ?
+                        (((perm & S_ISVTX) && (flags & FP_SPECIAL)) ? 't' : 'x') :
+                        (((perm & S_ISVTX) && (flags & FP_SPECIAL)) ? 'T' : '-'));
+        return str;
+}
+
 /* Quickly append named files to archive */
 void fq(int argc, char *argv[])
 {
@@ -134,11 +158,12 @@ void ft(int argc, char *argv[], int v)
                 int bytes_read = read(arfd, hdrbuf, sizeof(struct ar_hdr));
                 if (bytes_read == -1) error("Error reading archive");
                 if (bytes_read != sizeof(struct ar_hdr)) break; //We have hit the end of the file.
+
                 if (v){
                         
-                } else {
-                        printf("%.*s\n", 16, rslash(hdrbuf->ar_name, 16));
                 }
+                printf("%.*s\n", 16, rslash(hdrbuf->ar_name, 16));
+
                 char *arname = hdrbuf->ar_name;
                 int filesize = (int) strtol(hdrbuf->ar_size, hdrbuf->ar_size + 9, 10);
                 lseek(arfd, filesize + filesize % 2, SEEK_CUR); //Skip to the next file header, taking odd-length file newline padding into account.
