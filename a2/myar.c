@@ -13,6 +13,10 @@
 #define FP_SPECIAL 1
 #define STR_SIZE sizeof("rwxrwxrwx")
 
+#ifndef S_ISVTX
+#define S_ISVTX 01000
+#endif
+
 char *name; /* Name of the program */
 
 int main(int argc, char *argv[])
@@ -126,14 +130,61 @@ void fq(int argc, char *argv[])
 {
         if (argc < 2) usage();
 
-        int arfd;
-		
+        int arfd = open(argv[0], O_WRONLY | O_CREAT, 00666);
+        if (arfd == -1) error("Could not open or create archive");
+        struct stat *arstatbuf;
+        if (stat(argv[0], arstatbuf) == -1) error("Could not stat archive");
+        if (arstatbuf->st_size == 0) { //The archive file is empty; fill in the header.
+                if (write(arfd, ARMAG, SARMAG) != SARMAG) error("Error writing to archive");
+        } else {
+                isar(arfd); //Make sure it's an archive file.
+        }
+        
+        //Write the given files to the archive.
+        for (int i = 1; i < argc; i++) {
+                lseek(arfd, 1, SEEK_END);
+                struct stat *statbuf;
+                if (stat(argv[i], statbuf) == -1) {
+                        printf("Could not stat file %s", argv[i]);
+                        perror(NULL);
+                        break; //Skip to the next file.
+                }
+                int fd = open(argv[i], O_RDONLY);
+                if (fd == -1) {
+                        printf("Could not open file %s", argv[i]);
+                        perror(NULL);
+                        break; //Skip to the next file.
+                }
 
- = open(argv[0], O_WRONLY | O_CREAT, 00666);
+                //Write the file header to the archive.
+                struct ar_hdr *hdr = malloc(sizeof(struct ar_hdr));
+                strncpy(hdr->ar_name, argv[i], 16);
+                strncpy(hdr->ar_date, (char *) statbuf->st_mtime, 12);
+                strncpy(hdr->ar_uid, (char *) statbuf->st_uid, 6);
+                strncpy(hdr->ar_gid, (char *) statbuf->st_gid, 6);
+                strncpy(hdr->ar_mode, (char *) statbuf->st_mode, 8);
+                strncpy(hdr->ar_size, (char *) statbuf->st_size, 10);
+                strncpy(hdr->ar_fmag, ARFMAG, 2);
+                if (write(arfd, hdr, sizeof(struct ar_hdr)) != sizeof(struct ar_hdr)) error("Error writing to archive");
 
-        if (arfd == -1) error("Could not open archive");
-
-        isar(arfd);
+                //Write the file contents to the archive.
+                for (int j = 0; j < hdr->ar_size; j++) {
+                        char byte;
+                        int bytes_read = read(fd, byte, 1);
+                        if (bytes_read == 0) { //We hit the end of the file.
+                                break; //Skip to the next file.
+                        } else if (bytes_read != 1) {
+                                printf("Error reading file %s", argv[i]);
+                                perror(NULL);
+                                break; //Skip to the next file.
+                        }
+                        int bytes_written = write(arfd, byte, 1);
+                        if (bytes_written != 1) {
+                                perror("Error writing to archive");
+                                break; //Skip to the next file.
+                        }
+                }
+        }
 }
 
 /* Extract named files */
