@@ -14,14 +14,8 @@ char *name; /* Name of the program */
 int main(int argc, char *argv[])
 {
         /* Parse the flags */
-        int opt;
-        int q = 0;
-        int x = 0;
-        int t = 0;
-        int d = 0;
-        int A = 0;
-        int w = 0;
-        int v = 0;
+        int opt, q, x, t, d, A, w, v;
+        q = x = t = d = A = w = v = 0;
         while ((opt = getopt(argc, argv, "qxtdAwv")) != -1) {
                 switch (opt) {
                         case 'q':
@@ -91,7 +85,7 @@ void isar(int fd)
 {
       char buf[SARMAG];
       if(read(fd, buf, SARMAG) != SARMAG) error("Could not read archive");
-      if(strcmp(buf, ARMAG) != 0) error("No archive speoified");    
+      if(strcmp(buf, ARMAG) != 0) error("No archive specified");    
 }
 
 /* Removes '/'s from the given char array */
@@ -107,6 +101,15 @@ char* rslash(char name[], int len)
 void fq(int argc, char *argv[])
 {
         if (argc < 2) usage();
+
+        int arfd;
+		
+
+ = open(argv[0], O_WRONLY | O_CREAT, 00666);
+
+        if (arfd == -1) error("Could not open archive");
+
+        isar(arfd);
 }
 
 /* Extract named files */
