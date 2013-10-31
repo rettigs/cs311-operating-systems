@@ -1,7 +1,7 @@
 void usage();
-void fq(int argc, char *argv[]);
-void fx(int argc, char *argv[]);
+void fq(int argc, char *argv[], int v);
+void fx(int argc, char *argv[], int v);
 void ft(int argc, char *argv[], int v);
-void fd(int argc, char *argv[]);
-void fA(int argc, char *argv[]);
-void fw(int argc, char *argv[]);
+void fd(int argc, char *argv[], int v);
+void fA(char *arch, int v);
+void fw(int argc, char *argv[], int v);

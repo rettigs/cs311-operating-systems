@@ -1,3 +1,5 @@
+#define _BSD_SOURCE
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -7,15 +9,12 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <string.h>
+#include <dirent.h>
 #include <ar.h>
 #include "myar.h"
 
 #define FP_SPECIAL 1
 #define STR_SIZE sizeof("rwxrwxrwx")
-
-#ifndef S_ISVTX
-#define S_ISVTX 01000
-#endif
 
 char *name; /* Name of the program */
 
@@ -63,12 +62,12 @@ int main(int argc, char *argv[])
         char **argv2 = &argv[optind];
 
         /* Perform the action indicated by the given flag. */
-        if (q) fq(argc2, argv2);
-        else if (x) fx(argc2, argv2);
+        if (q) fq(argc2, argv2, v);
+        else if (x) fx(argc2, argv2, v);
         else if (t) ft(argc2, argv2, v);
-        else if (d) fd(argc2, argv2);
-        else if (A) fA(argc2, argv2);
-        else if (w) fw(argc2, argv2);
+        else if (d) fd(argc2, argv2, v);
+        else if (A) fA(argv2[0], v);
+        else if (w) fw(argc2, argv2, v);
 
         exit(EXIT_SUCCESS);
 }
@@ -126,7 +125,7 @@ char * file_perm_string(mode_t perm, int flags)
 }
 
 /* Quickly append named files to archive */
-void fq(int argc, char *argv[])
+void fq(int argc, char *argv[], int v)
 {
         if (argc < 2) usage();
 
@@ -195,7 +194,7 @@ void fq(int argc, char *argv[])
 }
 
 /* Extract named files */
-void fx(int argc, char *argv[])
+void fx(int argc, char *argv[], int v)
 {
         
 }
@@ -231,19 +230,32 @@ void ft(int argc, char *argv[], int v)
 }
 
 /* Delete named files from archive */
-void fd(int argc, char *argv[])
+void fd(int argc, char *argv[], int v)
 {
         
 }
 
 /* Quickly append all regular files in the current directory (except the archive itself) */
-void fA(int argc, char *argv[])
+void fA(char *arch, int v)
 {
-        
+        DIR *curdir;
+        struct dirent *entry;
+        curdir = opendir(".");
+        if (curdir == NULL) error("Could not open current directory");
+        if (v) printf("Adding all regular files in current directory to archive...\n");
+        while ((entry = readdir(curdir)) != NULL) {
+                if (entry->d_type == DT_REG){
+                        char *argv[2];
+                        argv[0] = arch;
+                        argv[1] = entry->d_name;
+                        fq(2, argv, v);
+                }
+        }
+        if (v) printf("Done adding all regular files in current directory to archive.\n");
 }
 
 /* For a given timeout, add all modified files to the archive (except the archive itself) */
-void fw(int argc, char *argv[])
+void fw(int argc, char *argv[], int v)
 {
         
 }
