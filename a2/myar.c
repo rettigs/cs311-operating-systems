@@ -130,11 +130,11 @@ void fq(int argc, char *argv[])
 {
         if (argc < 2) usage();
 
-        int arfd = open(argv[0], O_WRONLY | O_CREAT, 00666);
+        int arfd = open(argv[0], O_RDWR | O_CREAT, 0666);
         if (arfd == -1) error("Could not open or create archive");
-        struct stat *arstatbuf;
-        if (stat(argv[0], arstatbuf) == -1) error("Could not stat archive");
-        if (arstatbuf->st_size == 0) { //The archive file is empty; fill in the header.
+        struct stat arstatbuf;
+        if (stat(argv[0], &arstatbuf) == -1) error("Could not stat archive");
+        if (arstatbuf.st_size == 0) { //The archive file is empty; fill in the header.
                 if (write(arfd, ARMAG, SARMAG) != SARMAG) error("Error writing to archive");
         } else {
                 isar(arfd); //Make sure it's an archive file.
@@ -142,9 +142,9 @@ void fq(int argc, char *argv[])
         
         //Write the given files to the archive.
         for (int i = 1; i < argc; i++) {
-                lseek(arfd, 1, SEEK_END);
-                struct stat *statbuf;
-                if (stat(argv[i], statbuf) == -1) {
+                lseek(arfd, 0, SEEK_END);
+                struct stat statbuf;
+                if (stat(argv[i], &statbuf) == -1) {
                         printf("Could not stat file %s", argv[i]);
                         perror(NULL);
                         break; //Skip to the next file.
@@ -159,30 +159,37 @@ void fq(int argc, char *argv[])
                 //Write the file header to the archive.
                 struct ar_hdr *hdr = malloc(sizeof(struct ar_hdr));
                 strncpy(hdr->ar_name, argv[i], 16);
-                strncpy(hdr->ar_date, (char *) statbuf->st_mtime, 12);
-                strncpy(hdr->ar_uid, (char *) statbuf->st_uid, 6);
-                strncpy(hdr->ar_gid, (char *) statbuf->st_gid, 6);
-                strncpy(hdr->ar_mode, (char *) statbuf->st_mode, 8);
-                strncpy(hdr->ar_size, (char *) statbuf->st_size, 10);
+                snprintf(hdr->ar_date, 12, "%d", statbuf.st_mtime);
+                snprintf(hdr->ar_uid, 6, "%d", statbuf.st_uid);
+                snprintf(hdr->ar_gid, 6, "%d", statbuf.st_gid);
+                snprintf(hdr->ar_mode, 8, "%d", statbuf.st_mode);
+                snprintf(hdr->ar_size, 10, "%d", statbuf.st_size);
                 strncpy(hdr->ar_fmag, ARFMAG, 2);
+                for (int j = 0; j < sizeof(struct ar_hdr); j++) {
+                        if (hdr->ar_name[j] == '\0') hdr->ar_name[j] = ' ';
+                }
                 if (write(arfd, hdr, sizeof(struct ar_hdr)) != sizeof(struct ar_hdr)) error("Error writing to archive");
 
                 //Write the file contents to the archive.
-                for (int j = 0; j < hdr->ar_size; j++) {
+                for (int j = 0; j < (int) strtol(hdr->ar_size, hdr->ar_size + 9, 10); j++) {
                         char byte;
-                        int bytes_read = read(fd, byte, 1);
+                        int bytes_read = read(fd, &byte, 1);
                         if (bytes_read == 0) { //We hit the end of the file.
                                 break; //Skip to the next file.
                         } else if (bytes_read != 1) {
-                                printf("Error reading file %s", argv[i]);
+                                printf("Error reading file %s\n", argv[i]);
                                 perror(NULL);
                                 break; //Skip to the next file.
                         }
-                        int bytes_written = write(arfd, byte, 1);
-                        if (bytes_written != 1) {
-                                perror("Error writing to archive");
-                                break; //Skip to the next file.
-                        }
+                        int bytes_written = write(arfd, &byte, 1);
+                        if (bytes_written != 1) error("Error writing to archive");
+                }
+
+                //Write an extra newline if the file length is odd.
+                if ((int) strtol(hdr->ar_size, hdr->ar_size + 9, 10) % 2) {
+                        char newline = '\n';
+                        int bytes_written = write(arfd, &newline, 1);
+                        if (bytes_written != 1) error("Error writing to archive");
                 }
         }
 }
