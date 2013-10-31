@@ -1,0 +1,86 @@
+\documentclass[letterpaper,10pt,fleqn]{article}
+
+%example of setting the fleqn parameter to the article class -- the below sets the offset from flush left (fl)
+\setlength{\mathindent}{1cm}
+
+\usepackage{graphicx}                                        
+
+\usepackage{amssymb}                                         
+\usepackage{amsmath}                                         
+\usepackage{amsthm}                                          
+
+\usepackage{alltt}                                           
+\usepackage{float}
+\usepackage{color}
+
+\usepackage{balance}
+\usepackage[TABBOTCAP, tight]{subfigure}
+\usepackage{enumitem}
+
+\usepackage{pstricks, pst-node}
+
+%the following sets the geometry of the page
+\usepackage{geometry}
+\geometry{textheight=9in, textwidth=6.5in}
+
+% random comment
+
+\newcommand{\cred}[1]{{\color{red}#1}}
+\newcommand{\cblue}[1]{{\color{blue}#1}}
+
+\usepackage{hyperref}
+
+\usepackage{textcomp}
+\usepackage{listings}
+
+\usepackage{wasysym}
+
+\def\name{Sean Rettig}
+
+%% The following metadata will show up in the PDF properties
+\hypersetup{
+  colorlinks = true,
+  urlcolor = black,
+  pdfauthor = {\name},
+  pdfkeywords = {cs311 ``operating systems''},
+  pdftitle = {CS 311 Project},
+  pdfsubject = {CS 311 Project},
+  pdfpagemode = UseNone
+}
+
+\parindent = 0.0 in
+\parskip = 0.2 in
+
+\pagestyle{empty}
+
+\numberwithin{equation}{section}
+
+\newcommand{\D}{\mathrm{d}}
+
+\newcommand\invisiblesection[1]{%
+  \refstepcounter{section}%
+  \addcontentsline{toc}{section}{\protect\numberline{\thesection}#1}%
+  \sectionmark{#1}}
+
+\begin{document}
+
+%to remove page numbers, set the page style to empty
+
+\section*{Assignment 2 Write-up}
+\hrule
+
+\subsection*{Design}
+\begin{itemize}
+        \item For all functions, myar first opens/creates the archive file and checks to make sure that it is a valid archive by reading the header and comparing it to ARMAG.  It only continues if they match.
+        \item For -q, for each file to be archived, myar seeks to the end of the file, stats the next file, copies the data into an ar\_hdr, then writes the ar\_hdr to the archive, after which it does a byte-by-byte copy of the contents of the file itself.
+        \item For -x, for each file in the archive, myar reads the name, and if it matches any of the file name arguments, it will create the file and do a byte-by-byte copy.  It will then set the file metadata using the other information in the header, and remove that file name from the list to check for.  After each header check, it lseeks ahead by the filesize in that header so that it can read the next header (or hit the end of the archive).
+        \item For -t, myar follows a very similar process to -x, but rather than creating a file, it just prints the filename (and metadata, if specified with -v) and lseeks to the next header.
+        \item For -d, for each file in the archive, it reads the header, and if the file name matches the list of files to delete, it skips to the next header and removes that file name from the list to check for.  If the file name does not match, it unlinks the current archive and creates a new archive with the same name (if one doesn't already exist) and copies over both that header and its corresponding file data.  Once the entire archive has been processed, it is deleted.
+        \item For -A, myar simply stats the current directory and passes all regular files to the -q function.
+        \item For -w, it stats the current directory and then stats each regular file in the directory, storing each of the file names and modification times.  It then traverses the archive looking for file headers with the same name but an older modifcation time, and if it finds any, it simply calls the -q function on them to add the new versions to the end of the archive.
+        \item For -v, all of the previous functions will simply have extra printf statements that describe what is happening and only activate if the verbose flag is set.
+\end{itemize}
+
+\subsection*{Work Log}
+
+\end{document}
