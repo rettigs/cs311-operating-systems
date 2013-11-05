@@ -124,6 +124,31 @@ char * file_perm_string(mode_t perm, int flags)
         return str;
 }
 
+/* Copies data byte-by-byte from one file to another */
+void copy(int from_fd, int to_fd, int bytes)
+{
+        //Write the file contents to the archive.
+        for (int j = 0; j < bytes; j++) {
+                char byte;
+                int bytes_read = read(from_fd, &byte, 1);
+                if (bytes_read == 0) { //We hit the end of the file.
+                        break; //Skip to the next file.
+                } else if (bytes_read != 1) {
+                        perror("Error reading input file");
+                        break; //Skip to the next file.
+                }
+                int bytes_written = write(to_fd, &byte, 1);
+                if (bytes_written != 1) error("Error writing to output file");
+        }
+
+        //Write an extra newline if the data length is odd.
+        if ((int) bytes % 2) {
+                char newline = '\n';
+                int bytes_written = write(to_fd, &newline, 1);
+                if (bytes_written != 1) error("Error writing to output file");
+        }
+}
+
 /* Quickly append named files to archive */
 void fq(int argc, char *argv[], int v)
 {
@@ -144,13 +169,13 @@ void fq(int argc, char *argv[], int v)
                 lseek(arfd, 0, SEEK_END);
                 struct stat statbuf;
                 if (stat(argv[i], &statbuf) == -1) {
-                        printf("Could not stat file %s", argv[i]);
+                        printf("Could not stat file %s\n", argv[i]);
                         perror(NULL);
                         break; //Skip to the next file.
                 }
                 int fd = open(argv[i], O_RDONLY);
                 if (fd == -1) {
-                        printf("Could not open file %s", argv[i]);
+                        printf("Could not open file %s\n", argv[i]);
                         perror(NULL);
                         break; //Skip to the next file.
                 }
@@ -158,45 +183,65 @@ void fq(int argc, char *argv[], int v)
                 //Write the file header to the archive.
                 struct ar_hdr *hdr = malloc(sizeof(struct ar_hdr));
                 strncpy(hdr->ar_name, argv[i], 16);
-                snprintf(hdr->ar_date, 12, "%d", statbuf.st_mtime);
+                snprintf(hdr->ar_date, 12, "%d", (int) statbuf.st_mtime);
                 snprintf(hdr->ar_uid, 6, "%d", statbuf.st_uid);
                 snprintf(hdr->ar_gid, 6, "%d", statbuf.st_gid);
-                snprintf(hdr->ar_mode, 8, "%d", statbuf.st_mode);
-                snprintf(hdr->ar_size, 10, "%d", statbuf.st_size);
+                snprintf(hdr->ar_mode, 8, "%o", statbuf.st_mode);
+                snprintf(hdr->ar_size, 10, "%d", (int) statbuf.st_size);
                 strncpy(hdr->ar_fmag, ARFMAG, 2);
                 for (int j = 0; j < sizeof(struct ar_hdr); j++) {
                         if (hdr->ar_name[j] == '\0') hdr->ar_name[j] = ' ';
                 }
                 if (write(arfd, hdr, sizeof(struct ar_hdr)) != sizeof(struct ar_hdr)) error("Error writing to archive");
 
-                //Write the file contents to the archive.
-                for (int j = 0; j < (int) strtol(hdr->ar_size, hdr->ar_size + 9, 10); j++) {
-                        char byte;
-                        int bytes_read = read(fd, &byte, 1);
-                        if (bytes_read == 0) { //We hit the end of the file.
-                                break; //Skip to the next file.
-                        } else if (bytes_read != 1) {
-                                printf("Error reading file %s\n", argv[i]);
-                                perror(NULL);
-                                break; //Skip to the next file.
-                        }
-                        int bytes_written = write(arfd, &byte, 1);
-                        if (bytes_written != 1) error("Error writing to archive");
-                }
-
-                //Write an extra newline if the file length is odd.
-                if ((int) strtol(hdr->ar_size, hdr->ar_size + 9, 10) % 2) {
-                        char newline = '\n';
-                        int bytes_written = write(arfd, &newline, 1);
-                        if (bytes_written != 1) error("Error writing to archive");
-                }
+                copy(fd, arfd, (int) strtol(hdr->ar_size, hdr->ar_size + 9, 10));
+                close(fd);
         }
+        close(arfd);
 }
 
 /* Extract named files */
 void fx(int argc, char *argv[], int v)
 {
+        if (argc < 2) usage();
+
+        int arfd = open(argv[0], O_RDONLY);
+        if (arfd == -1) error("Could not open archive");
+        isar(arfd); //Make sure it's an archive file.
         
+        //Check every header in the archive.
+        struct ar_hdr *hdrbuf = malloc(sizeof(struct ar_hdr));
+        struct stat arstatbuf;
+        if (stat(argv[0], &arstatbuf) == -1) error("Could not stat archive");
+        off_t aroffset = 0;
+        while (aroffset < arstatbuf.st_size){ //Keep reading until we hit the end of the archive.
+                int bytes_read = read(arfd, hdrbuf, sizeof(struct ar_hdr));
+                if (bytes_read == -1) error("Error reading archive");
+                if (bytes_read != sizeof(struct ar_hdr)) break; //We have hit the end of the archive.
+                
+                //Check if this header is one we need to extract.
+                char *match = NULL;
+                for (int i = 1; i < argc; i++) {
+                        if (argv[i] != NULL && strncmp(hdrbuf->ar_name, argv[i], 4) == 0) {
+                                match = argv[i];
+                                argv[i] = NULL; //Clear the filename from the arguments so we don't match it again later.
+                                break;
+                        }
+                }
+
+                //If we found a match, extract the file.  Otherwise, seek to the next header.
+                int filesize = (int) strtol(hdrbuf->ar_size, hdrbuf->ar_size + 9, 10);
+                if (match != NULL) {
+                        if (v) printf("Extracting '%s'\n", match);
+                        int fd = creat(match, strtol(hdrbuf->ar_mode, hdrbuf->ar_mode + 7, 8));
+                        copy(arfd, fd, filesize);
+                        close(fd);
+                } else {
+                        lseek(arfd, filesize + filesize % 2, SEEK_CUR); //Skip to the next file header, taking odd-length file newline padding into account.
+                }
+                aroffset = lseek(arfd, 0, SEEK_CUR); //Get the offset so we know when to stop looping.
+        }
+        close(arfd);
 }
 
 /* Print a concise table of contents of the archive */
@@ -205,9 +250,7 @@ void ft(int argc, char *argv[], int v)
         if (argc != 1) usage();
         
         int arfd = open(argv[0], O_RDONLY);
-
         if (arfd == -1) error("Could not open archive");
-
         isar(arfd);
         
         struct ar_hdr *hdrbuf = malloc(sizeof(struct ar_hdr));
@@ -221,7 +264,6 @@ void ft(int argc, char *argv[], int v)
                 }
                 printf("%.*s\n", 16, rslash(hdrbuf->ar_name, 16));
 
-                char *arname = hdrbuf->ar_name;
                 int filesize = (int) strtol(hdrbuf->ar_size, hdrbuf->ar_size + 9, 10);
                 lseek(arfd, filesize + filesize % 2, SEEK_CUR); //Skip to the next file header, taking odd-length file newline padding into account.
         }
