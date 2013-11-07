@@ -20,6 +20,8 @@ char *name; /* Name of the program */
 
 int main(int argc, char *argv[])
 {
+        name = argv[0];
+
         /* Parse the flags */
         int opt, q, x, t, d, A, w, v;
         q = x = t = d = A = w = v = 0;
@@ -96,12 +98,27 @@ void isar(int fd)
 }
 
 /* Removes '/'s from the given char array */
-char* rslash(char name[], int len)
+char * rslash(char name[], int len)
 {
         for (int i = 0; i < len; i++) {
                 if (name[i] == '/') name[i] = '\0';
         }
         return name;
+}
+
+/* Converts a char array to a string by replacing whitespace at the end with null terminators */
+char * cats(char array[], int len)
+{
+        char * string[len];
+        for (int i = len - 1; i >= 0; i--) {
+printf("array[%d]: %c\n", i, array[i]);
+                if (array[i] = ' ') {
+                        string[i] = '\0';
+                } else {
+                        string[i] = array[i];
+                }
+        }
+        return string;
 }
 
 /* Return ls(1)-style string for file permissions mask */
@@ -222,7 +239,7 @@ void fx(int argc, char *argv[], int v)
                 //Check if this header is one we need to extract.
                 char *match = NULL;
                 for (int i = 1; i < argc; i++) {
-                        if (argv[i] != NULL && strncmp(hdrbuf->ar_name, argv[i], 4) == 0) {
+                        if (argv[i] != NULL && strncmp(hdrbuf->ar_name, argv[i], 16) == 0) {
                                 match = argv[i];
                                 argv[i] = NULL; //Clear the filename from the arguments so we don't match it again later.
                                 break;
@@ -274,7 +291,61 @@ void ft(int argc, char *argv[], int v)
 /* Delete named files from archive */
 void fd(int argc, char *argv[], int v)
 {
+        if (argc < 2) usage();
+
+        //Open the archive file and unlink it.
+        int arfd = open(argv[0], O_RDONLY);
+        if (arfd == -1) error("Could not open archive");
+        isar(arfd); //Make sure it's an archive file.
+        if (unlink(argv[0]) == -1) error("Could not unlink archive");
+
+        //Create the new archive file with the same name.
+        int newarfd = open(argv[0], O_RDWR | O_CREAT, 0666);
+        if (newarfd == -1) error("Could not open or create archive");
+        struct stat newarstatbuf;
+        if (stat(argv[0], &newarstatbuf) == -1) error("Could not stat archive");
+        if (newarstatbuf.st_size == 0) { //The archive file is empty; fill in the header.
+                if (write(newarfd, ARMAG, SARMAG) != SARMAG) error("Error writing to archive");
+        } else {
+                isar(newarfd); //Make sure it's an archive file.
+        }
         
+        //Check every header in the archive and copy over it and its file unless we're supposed to delete it.
+        struct ar_hdr *arhdrbuf = malloc(sizeof(struct ar_hdr));
+        struct stat arstatbuf;
+        if (stat(argv[0], &arstatbuf) == -1) error("Could not stat archive");
+        off_t aroffset = 0;
+        while (aroffset < arstatbuf.st_size){ //Keep reading until we hit the end of the archive.
+                int bytes_read = read(arfd, arhdrbuf, sizeof(struct ar_hdr));
+                if (bytes_read == -1) error("Error reading archive");
+                if (bytes_read != sizeof(struct ar_hdr)) break; //We have hit the end of the archive.
+                
+                //Check if this header is one we need to extract.
+                char *match = NULL;
+                for (int i = 1; i < argc; i++) {
+                        if (argv[i] != NULL && strncmp(arhdrbuf->ar_name, argv[i], 16) == 0) {
+                                match = argv[i];
+                                argv[i] = NULL; //Clear the filename from the arguments so we don't match it again later.
+                                break;
+                        }
+                }
+
+                //If we found a match, seek to the next header.  Otherwise, copy the header and its file to the new archive.
+                int filesize = (int) strtol(arhdrbuf->ar_size, arhdrbuf->ar_size + 9, 10);
+                if (match != NULL) {
+                        if (v) printf("Deleting '%s'\n", match);
+                        lseek(arfd, filesize + filesize % 2, SEEK_CUR); //Skip to the next file header, taking odd-length file newline padding into account.
+                } else {
+                        if (v) printf("Not deleting '%.16s'\n", arhdrbuf->ar_name);
+                        if (v) printf("Not deleting '%s'\n", cats(arhdrbuf->ar_name, 4));
+                        if (v) printf("Not deleting '%.16s'\n", arhdrbuf->ar_name);
+                        if (write(newarfd, arhdrbuf, sizeof(struct ar_hdr)) != sizeof(struct ar_hdr)) error("Error writing to archive");
+                        copy(arfd, newarfd, filesize);
+                }
+                aroffset = lseek(arfd, 0, SEEK_CUR); //Get the offset so we know when to stop looping.
+        }
+        close(arfd);
+        close(newarfd);
 }
 
 /* Quickly append all regular files in the current directory (except the archive itself) */
@@ -284,16 +355,16 @@ void fA(char *arch, int v)
         struct dirent *entry;
         curdir = opendir(".");
         if (curdir == NULL) error("Could not open current directory");
-        if (v) printf("Adding all regular files in current directory to archive...\n");
+        if (v) printf("Adding all regular files in current directory to archive:\n");
         while ((entry = readdir(curdir)) != NULL) {
-                if (entry->d_type == DT_REG){
+                if (entry->d_type == DT_REG && strcmp(entry->d_name, arch) != 0){
+                        if (v) printf("Adding '%s' to archive.\n", entry->d_name);
                         char *argv[2];
                         argv[0] = arch;
                         argv[1] = entry->d_name;
                         fq(2, argv, v);
                 }
         }
-        if (v) printf("Done adding all regular files in current directory to archive.\n");
 }
 
 /* For a given timeout, add all modified files to the archive (except the archive itself) */
