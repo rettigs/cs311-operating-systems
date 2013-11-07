@@ -1,10 +1,35 @@
+default: c
+
+both: pdf c
+
+# Compiles C code
+
+CC = gcc
+CFLAGS = -Wall -std=c99 -openmp -O3 -g -I.
+#overkill on the flags, but that doesn't hurt anything
+LDFLAGS = -lrt -lpthread -lm
+#replace this if you want to change the output name
+TARGET = example
+
+#any headers go here
+INCLUDES = myar.h
+
+#any .c or .cpp files go here
+SOURCE = myar.c
+
+#depends on all of you source and header files
+c: ${SOURCE} ${INCLUDES}
+#this assumes you actually are linking all of the source files together
+	${CC} ${CFLAGS} ${SOURCE} -o ${TARGET} ${LDFLAGS}
+
+#	debug: ${SOURCE} ${INCLUDES}
+#		${CC} ${CFLAGS} ${SOURCE} -o ${TARGET} ${LDFLAGS} -DDEBUG
+
+# Makes LaTeX into a PDF
+
 TARGET=writeup
 HTML=main_html
 SRC={$TARGET}
-
-default: pdf
-
-both: pdf html
 
 dvi: ${TARGET}.tex 
 #	pygmentize the input source file -- THIS NAME SHOULD BE SAFE
@@ -33,5 +58,4 @@ html:
 	mv ${HTML}/index2.html ${TARGET}.html
 	rm ${HTML}.*
 	rm -rf ${HTML}
-
 
