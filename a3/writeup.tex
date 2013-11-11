@@ -1,0 +1,89 @@
+\documentclass[letterpaper,10pt,fleqn]{article}
+
+%example of setting the fleqn parameter to the article class -- the below sets the offset from flush left (fl)
+\setlength{\mathindent}{1cm}
+
+\usepackage{graphicx}                                        
+
+\usepackage{amssymb}                                         
+\usepackage{amsmath}                                         
+\usepackage{amsthm}                                          
+
+\usepackage{alltt}                                           
+\usepackage{float}
+\usepackage{color}
+
+\usepackage{balance}
+\usepackage[TABBOTCAP, tight]{subfigure}
+\usepackage{enumitem}
+
+\usepackage{pstricks, pst-node}
+
+%the following sets the geometry of the page
+\usepackage{geometry}
+\geometry{textheight=9in, textwidth=6.5in}
+
+% random comment
+
+\newcommand{\cred}[1]{{\color{red}#1}}
+\newcommand{\cblue}[1]{{\color{blue}#1}}
+
+\usepackage{hyperref}
+
+\usepackage{textcomp}
+\usepackage{listings}
+
+\usepackage{wasysym}
+
+\def\name{Sean Rettig}
+
+%% The following metadata will show up in the PDF properties
+\hypersetup{
+  colorlinks = true,
+  urlcolor = black,
+  pdfauthor = {\name},
+  pdfkeywords = {cs311 ``operating systems''},
+  pdftitle = {CS 311 Project},
+  pdfsubject = {CS 311 Project},
+  pdfpagemode = UseNone
+}
+
+\parindent = 0.0 in
+\parskip = 0.2 in
+
+\pagestyle{empty}
+
+\numberwithin{equation}{section}
+
+\newcommand{\D}{\mathrm{d}}
+
+\newcommand\invisiblesection[1]{%
+  \refstepcounter{section}%
+  \addcontentsline{toc}{section}{\protect\numberline{\thesection}#1}%
+  \sectionmark{#1}}
+
+\begin{document}
+
+%to remove page numbers, set the page style to empty
+
+\section*{Assignment 3 Write-up}
+\hrule
+
+\subsection*{Design}
+\begin{itemize}
+        \item The program will read the argument and create a corresponding number of pipes.  It will then fork off the sorting processes, which each close the write end of their input pipe and the read end of their output pipe, then exec /bin/sort.  The main process will then read the file word by word and distribute them to the sort processes through the pipes, and once finished, it will close off its write ends and start reading the read ends of its pipes, one word at a time in round robin fashion.  It stores the most recent word in memory so it knows to ignore it if it read duplicate words.  After printing every unique word, it waits for the children so that they can terminate, and then terminates itself.  The main process listens for signals the entire time, and upon receiving a signal to terminate, it terminates all children.
+\end{itemize}
+
+\subsection*{Work Log}
+
+\subsection*{Challenges}
+
+\subsection*{Questions}
+
+\subsubsection*{What do you think the main point of this assignment is?}
+
+\subsubsection*{How did you ensure your solution was correct?}
+
+\subsubsection*{What did you learn?}
+
+\end{document}
