@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
         else if (x) fx(argc2, argv2, v);
         else if (t) ft(argc2, argv2, v);
         else if (d) fd(argc2, argv2, v);
-        else if (A) fA(argv2[0], v);
+        else if (A) fA(argc2, argv2, v);
         else if (w) fw(argc2, argv2, v);
 
         exit(EXIT_SUCCESS);
@@ -277,7 +277,11 @@ void ft(int argc, char *argv[], int v)
                 if (bytes_read != sizeof(struct ar_hdr)) break; //We have hit the end of the file.
 
                 if (v){
-                        
+printf("ar_mode: %.8s\n", hdrbuf->ar_mode);
+printf("octal: %o", strtol(hdrbuf->ar_mode, hdrbuf->ar_mode + 7, 10));
+                        //printf("%s\t",
+                        //        file_perm_string((int) strtol(hdrbuf->ar_mode, hdrbuf->ar_mode + 7, 8), 0)
+                        //);
                 }
                 printf("%.*s\n", 16, rslash(hdrbuf->ar_name, 16));
 
@@ -349,20 +353,22 @@ void fd(int argc, char *argv[], int v)
 }
 
 /* Quickly append all regular files in the current directory (except the archive itself) */
-void fA(char *arch, int v)
+void fA(int argc, char *argv[], int v)
 {
+        if (argc != 1) usage();
+
         DIR *curdir;
         struct dirent *entry;
         curdir = opendir(".");
         if (curdir == NULL) error("Could not open current directory");
         if (v) printf("Adding all regular files in current directory to archive:\n");
         while ((entry = readdir(curdir)) != NULL) {
-                if (entry->d_type == DT_REG && strcmp(entry->d_name, arch) != 0){
+                if (entry->d_type == DT_REG && strcmp(entry->d_name, argv[0]) != 0){
                         if (v) printf("Adding '%s' to archive.\n", entry->d_name);
-                        char *argv[2];
-                        argv[0] = arch;
-                        argv[1] = entry->d_name;
-                        fq(2, argv, v);
+                        char *qargv[2];
+                        qargv[0] = argv[0];
+                        qargv[1] = entry->d_name;
+                        fq(2, qargv, v);
                 }
         }
 }
@@ -370,5 +376,5 @@ void fA(char *arch, int v)
 /* For a given timeout, add all modified files to the archive (except the archive itself) */
 void fw(int argc, char *argv[], int v)
 {
-        
+
 }

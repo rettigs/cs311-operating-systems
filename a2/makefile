@@ -1,6 +1,4 @@
-default: c
-
-both: pdf c
+default: pdf c
 
 # Compiles C code
 
@@ -9,7 +7,7 @@ CFLAGS = -Wall -std=c99 -openmp -O3 -g -I.
 #overkill on the flags, but that doesn't hurt anything
 LDFLAGS = -lrt -lpthread -lm
 #replace this if you want to change the output name
-TARGET = example
+TARGET = myar
 
 #any headers go here
 INCLUDES = myar.h
@@ -27,35 +25,35 @@ c: ${SOURCE} ${INCLUDES}
 
 # Makes LaTeX into a PDF
 
-TARGET=writeup
+LATEXTARGET=writeup
 HTML=main_html
-SRC={$TARGET}
+SRC={$LATEXTARGET}
 
-dvi: ${TARGET}.tex 
+dvi: ${LATEXTARGET}.tex 
 #	pygmentize the input source file -- THIS NAME SHOULD BE SAFE
-#	pygmentize -f latex -o __${TARGET}.tex ${TARGET}.tex
+#	pygmentize -f latex -o __${LATEXTARGET}.tex ${LATEXTARGET}.tex
 #	run latex twice to get references correct
-	latex ${TARGET}.tex
+	latex ${LATEXTARGET}.tex
 #	you can also have a bibtex line here
-#	bibtex $(TARGET)
-	latex $(TARGET).tex
+#	bibtex $(LATEXTARGET)
+	latex $(LATEXTARGET).tex
 #	remove the pygmentized output to avoid cluttering up the directory
-#	rm __${TARGET}.tex
+#	rm __${LATEXTARGET}.tex
 
 ps: dvi
-	dvips -R -Poutline -t letter ${TARGET}.dvi -o ${TARGET}.ps
+	dvips -R -Poutline -t letter ${LATEXTARGET}.dvi -o ${LATEXTARGET}.ps
 
 pdf: ps
-	ps2pdf ${TARGET}.ps
+	ps2pdf ${LATEXTARGET}.ps
 
 
 html:
-	cp ${TARGET}.tex ${HTML}.tex
+	cp ${LATEXTARGET}.tex ${HTML}.tex
 	latex ${HTML}.tex
 	latex2html -split 0 -noshow_section_numbers -local_icons -no_navigation -noinfo -noaddress ${HTML}
 
 	sed 's/<BR><HR>//g' < ${HTML}/index.html > ${HTML}/index2.html
-	mv ${HTML}/index2.html ${TARGET}.html
+	mv ${HTML}/index2.html ${LATEXTARGET}.html
 	rm ${HTML}.*
 	rm -rf ${HTML}
 
