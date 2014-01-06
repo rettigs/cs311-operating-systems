@@ -1,0 +1,179 @@
+\documentclass[letterpaper,10pt,fleqn]{article}
+
+%example of setting the fleqn parameter to the article class -- the below sets the offset from flush left (fl)
+\setlength{\mathindent}{1cm}
+
+\usepackage{graphicx}                                        
+
+\usepackage{amssymb}                                         
+\usepackage{amsmath}                                         
+\usepackage{amsthm}                                          
+
+\usepackage{alltt}                                           
+\usepackage{float}
+\usepackage{color}
+
+\usepackage{balance}
+\usepackage[TABBOTCAP, tight]{subfigure}
+\usepackage{enumitem}
+
+\usepackage{pstricks, pst-node}
+
+%the following sets the geometry of the page
+\usepackage{geometry}
+\geometry{textheight=9in, textwidth=6.5in}
+
+% random comment
+
+\newcommand{\cred}[1]{{\color{red}#1}}
+\newcommand{\cblue}[1]{{\color{blue}#1}}
+
+\usepackage{hyperref}
+
+\usepackage{textcomp}
+\usepackage{listings}
+
+\usepackage{wasysym}
+
+\def\name{Sean Rettig}
+
+%% The following metadata will show up in the PDF properties
+\hypersetup{
+  colorlinks = true,
+  urlcolor = black,
+  pdfauthor = {\name},
+  pdfkeywords = {cs311 ``operating systems''},
+  pdftitle = {CS 311 Project},
+  pdfsubject = {CS 311 Project},
+  pdfpagemode = UseNone
+}
+
+\parindent = 0.0 in
+\parskip = 0.2 in
+
+\pagestyle{empty}
+
+\numberwithin{equation}{section}
+
+\newcommand{\D}{\mathrm{d}}
+
+\newcommand\invisiblesection[1]{%
+  \refstepcounter{section}%
+  \addcontentsline{toc}{section}{\protect\numberline{\thesection}#1}%
+  \sectionmark{#1}}
+
+\begin{document}
+
+%to remove page numbers, set the page style to empty
+
+\section*{Surface Integral}
+\addtocounter{section}{1}
+\hrule
+
+For a scalar function \(f\) over a surface parameterized by u and v, the surface integral is given by
+\\
+\\
+\begin{align}
+  \Phi =& \displaystyle\int_S f \ \! \D a \\
+  =& \displaystyle\int_S f(u, v)|\mathbf{T}_u \times \mathbf{T}_v| \ \! \D u \ \! \D v
+\end{align}
+\\
+\\
+where \(\mathbf{T}_u\) and \(\mathbf{T}_v\) are tangent vectors and \(a \times b\) is the corss product.
+
+For a vector function over a surface, the surface integral is given by
+\\
+\\
+\begin{align}
+  \Phi =& \displaystyle\int_S \mathbf{F} \cdot \ \D \mathbf{a} \\
+  =& \displaystyle\int_S \ \! (\mathbf{F} \cdot \mathbf{\hat{n}}) \ \D a \\
+  =& \displaystyle\int_S f_x \ \! \D y \ \! \D z + f_y \ \! \D z \ \! \D x + f_z \ \! \D x \ \! \D y
+\end{align}
+\\
+\\
+where \(\mathbf{a \cdot b}\) is a dot product and \(\mathbf{\hat{n}}\) is a unit normal vector. If \(z \! = \! f(x, y)\), the d\textbf{a} is given explicitly by
+\\
+\\
+\begin{align}
+  \D \mathbf{a} =& \pm \left(-\frac{\partial z}{\partial x}\mathbf{\hat{x}} - \frac{\partial z}{\partial y}\mathbf{\hat{y}} + \mathbf{\hat{z}}\right) \ \! \D x \ \! \D y
+\end{align}
+\\
+\\
+If the surface is \emph{surface parameterized} using \emph{u} and \emph{v}, then
+\\
+\\
+\begin{align}
+  \Phi =& \displaystyle\int_S \mathbf{F} \cdot (\mathbf{T}_u \times \mathbf{T}_v) \ \D u \ \! \D v.
+\end{align}
+\\
+\\
+
+\newpage
+
+%This dirty hack is needed because section* does not increment the counter, addtocounter doesn't reset the subsection numbering, and setcounter{subsection}{2} has no effect whatsoever.  Sigh.
+\invisiblesection{}
+\section*{Maxwell's Equations}
+\hrule
+\phantom{A}
+\centerline{\includegraphics[width=0.75\textwidth]{maxwell.eps}}
+
+\subsection*{Integral form}
+
+\begin{align}
+  \oiint_{\partial\Omega} \mathbf{E} \cdot d\mathbf{S} =& \ \! \frac{1}{\varepsilon_0} \iiint_\Omega \rho \ \! \D V \\
+  \oiint_{\partial\Omega} \mathbf{B} \cdot d\mathbf{S} =& \ \! 0 \\
+  \oint_{\partial\Sigma} \mathbf{E} \cdot \D \ell =& - \! \frac{d}{dt} \iint_\Sigma \mathbf{B} \cdot \D \mathbf{S} \\
+  \oint_{\partial\Sigma} \mathbf{B} \cdot \D \ell =& \ \! \mu_0 \iint_\Sigma \left(\mathbf{J} + \varepsilon_0 \frac{\partial \mathbf{E}}{\partial t} \right) \cdot \D \mathbf {S}
+\end{align}
+
+\subsection*{Differential form}
+
+\begin{align}
+  \nabla \cdot \mathbf{E} =& \ \! \frac{\rho}{\varepsilon_0} \\
+  \nabla \cdot \mathbf{B} =& \ \! 0 \\
+  \nabla \times \mathbf{E} =& \ \! - \! \frac{\partial \mathbf{B}}{\partial t} \\
+  \nabla \times \mathbf{B} =& \ \! \mu_0 \left( \mathbf{J} + \varepsilon_0 \frac{\partial \mathbf{E}}{\partial t}\right)
+\end{align}
+
+\newpage
+
+\section*{Grading Policies}
+\hrule
+
+\begin{enumerate}
+\item All project must be submitted electronically by 23:59:59 on the due date via TEACH -- use ``Check
+time on server'' if unsure about your clock. TEACH time takes priority over your local computer.
+\item Only a single late homework assignment allowed. Only allowed up to 7 calendar days late.
+\item Submit late homework to your assigned TA via email.
+\item Blatant disrespect to or by the TAs will not be tolerated.
+\item If you do not demo your project, you do not receive credit for it.
+\item When you make an appointment to demo, show up. Failure to show up will result in a grade penalty.
+Repeated offenses will result in no credit for the assignment.
+\item If your project does not compile, for any reason, no credit will be
+\item Compilation will be on os-class. This server is the final say on whether your code compiles.
+\item No directories in you submissions. You will be penalized for including any sort of hierarchy.
+\item All assignments submitted to TEACH. No late submissions will be accepted via TEACH.
+\item Naming convention: CS311\_proj\(\langle\)x\(\rangle\)\_\(\langle\)engr\_username\(\rangle\).tar.bz2. Fill in \(\langle\)\(\rangle\) with appropriate values.
+\item No zip files will be accepted. You must use bzipped tar files.
+\item All non-code documents must be created with LaTeX, by hand. This will be discussed in class.
+\item All work must be done individually unless specifically allowed to work in groups.
+\end{enumerate}
+
+\section*{Learning Objectives}
+\hrule
+
+\begin{itemize}
+\item Explain why multiprogramming is important for modern operating systems.
+\item Explain the general structure of a multiprogrammed operating system.
+\item Explain the purpose and operation of system calls.
+\item Write a program utilizing system calls.
+\item Write a program using a scripting language.
+\item Write a program that uses regular expressions to parse input data.
+\item Write a program that spawns processes and provides mutual exclusion for variables or other resources
+shared by the processes.
+\item Write a program that uses sockets to implement a client/server system.
+\item Explain how a common file system works, including structure, I/O operations, and security.
+\item Describe the memory organization of a typical process in a common operating system.
+\end{itemize}
+
+\end{document}

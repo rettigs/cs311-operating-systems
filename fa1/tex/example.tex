@@ -1,0 +1,104 @@
+\documentclass[letterpaper,10pt,titlepage]{article}
+
+\usepackage{graphicx}                                        
+
+\usepackage{amssymb}                                         
+\usepackage{amsmath}                                         
+\usepackage{amsthm}                                          
+
+\usepackage{alltt}                                           
+\usepackage{float}
+\usepackage{color}
+
+\usepackage{url}
+
+\usepackage{balance}
+\usepackage[TABBOTCAP, tight]{subfigure}
+\usepackage{enumitem}
+
+\usepackage{pstricks, pst-node}
+
+\usepackage{geometry}
+\geometry{textheight=10in, textwidth=7.5in}
+
+%random comment
+
+\newcommand{\cred}[1]{{\color{red}#1}}
+\newcommand{\cblue}[1]{{\color{blue}#1}}
+
+\usepackage{hyperref}
+
+\def\name{D. Kevin McGrath}
+
+%pull in the necessary preamble matter for pygments output
+\input{pygments.tex}
+
+%% The following metadata will show up in the PDF properties
+\hypersetup{
+  colorlinks = true,
+  urlcolor = black,
+  pdfauthor = {\name},
+  pdfkeywords = {cs311 ``operating systems'' files filesystem I/O},
+  pdftitle = {CS 311 Project 1: UNIX File I/O},
+  pdfsubject = {CS 311 Project 1},
+  pdfpagemode = UseNone
+}
+
+\parindent = 0.0 in
+\parskip = 0.2 in
+
+\begin{document}
+
+Below is some math.
+
+$
+\oint_0^{2\pi} x \log x \partial x
+$
+
+$$
+\oint_0^2\pi x \log x \partial x
+$$
+
+\begin{equation}
+\oint_0^{2\pi} x \log x \partial x
+\end{equation}
+
+Above is some more math.
+
+If I want a literal underscore (like\_this), I have to escape it, using a backslash ($\backslash$).
+
+
+\begin{itemize}
+\item This is a bulleted list.
+\item Look, another bullet.
+\end{itemize}
+
+\begin{enumerate}
+\item This one is numbered.
+\item Yay for \#2.
+\item[new label] This one isn't actually numbered...
+\end{enumerate}
+
+\section*{Name of section}
+
+This is langle and rangle in math mode: $\langle \rangle$
+
+This is langle and rangle without math mode: $<>$
+
+This is langle and rangle without escaping: <>
+
+\begin{tabular}{|c|c|c|}
+  \hline
+  1 & 2 & 3 \\ \hline
+  4 & 544432432 & 6 \\ \hline
+  7 & 8 & 9 \\ \hline 
+\end{tabular}
+
+%to include an image:
+%\includegraphics[width=\textwidth]{image.eps}
+
+
+%input the pygmentized output of mt19937ar.c, using a (hopefully) unique name
+%this file only exists at compile time. Feel free to change that.
+%\input{__mt.h.tex}
+\end{document}
