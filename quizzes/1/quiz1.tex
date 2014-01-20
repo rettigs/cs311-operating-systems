@@ -1,0 +1,120 @@
+\documentclass[letterpaper,10pt,onecolumn,titlepage]{article}
+
+\usepackage{graphicx}                                        
+\usepackage{amssymb}                                         
+\usepackage{amsmath}                                         
+\usepackage{amsthm}                                          
+
+\usepackage{alltt}                                           
+\usepackage{float}
+\usepackage{color}
+\usepackage{url}
+
+\usepackage{balance}
+\usepackage[TABBOTCAP, tight]{subfigure}
+\usepackage{enumitem}
+\usepackage{pstricks, pst-node, pst-tree}
+
+
+\usepackage{geometry}
+\geometry{textheight=9.5in, textwidth=7in, bmargin=1in}
+
+% random comment
+
+\newcommand{\cred}[1]{{\color{red}#1}}
+\newcommand{\cblue}[1]{{\color{blue}#1}}
+
+\usepackage{hyperref}
+\usepackage{geometry}
+
+\def\name{D. Kevin McGrath}
+
+\parindent = 0.0 in
+\parskip = 0.1 in
+
+%% The following metadata will show up in the PDF properties
+\hypersetup{
+  colorlinks = true,
+  urlcolor = black,
+  pdfauthor = {\name},
+  pdfkeywords = {cs411 ``operating systems'' files filesystem I/O},
+  pdftitle = {CS 411 Final},
+  pdfsubject = {CS 411 Final},
+  pdfpagemode = UseNone
+}
+
+\pagestyle{empty}
+\begin{document}
+
+\noindent {\large \bf Name: \line(1,0){200} \hfill Quiz 1}
+
+\noindent {\large \bf ID\#: \line(1,0){200} }
+
+{\Large CS311 Operating Systems I}
+
+\emph{Please use this \LaTeX\ file as a template, and answer the following questions.
+  Please be detailed in your answers.}
+
+\emph{There are \ref{last} questions on this quiz. Please answer all of them clearly.
+  Points are awarded for more complete answers. Brevity buys you nothing.}
+
+
+\begin{enumerate}[itemsep=0.1 in]
+\item What is the name of your TA?
+
+\item In \LaTeX, what are environments? Describe why they are useful.
+
+\item What is a \emph{process}? How are processes created? How are processes terminated?
+  What IDs are associated with a process, and what are they used for?
+
+\item What is the environment in UNIX, and why is it important to the execution of a
+  process?
+
+\item Draw the OS stack.
+
+\item Why did Baron M\"unchhausen deny traveling a mile on a cannon ball? 
+
+\item Each process has 4 general memory segments. What are they? What sorts of things are
+  stored in each? Where are they relative to one another?
+
+\item What is the \texttt{/proc} filesystem? How does it differ from the \texttt{/sys}
+  filesystem?
+
+\item What is a system call, and what is the path through the system?
+
+\item Explain the use of feature test macros, and why they are important.
+
+\item Describe the concept of portability, some issues related to it, and how we deal
+  with it in this class.
+
+\item In subversion, a \emph{commit} pushes all changes to the central repository. What
+  is the git equivalent of this, and why do you think it is the way it is?
+
+\item Virtual memory, as implemented by Linux, provides two specific advantages. What are
+  they, and why are they advantages?
+
+\item Error checking is a fundamental aspect of systems programming. Describe how this
+  works. What facilities are created for you to deal with possible errors? How are they
+  used?
+
+\item Describe the differences in structure and usage of shared vs. static libraries.
+
+\item What is IPC, and what are some examples of it? What purpose does it serve?
+
+\item What are different ways to take advantage of multi-core or multi-processor systems?
+
+\item Explain the difference between user space and kernel space.
+
+\item The UNIX I/O model is known as a \emph{universal I/O model}. Why? What advantages
+  does this bring? How does this relate to file descriptors?
+
+\item\label{last} In python, the \texttt{subprocess} module serves what purpose? Why is
+  this particularly useful?
+
+
+\end{enumerate}
+
+% \clearpage\null
+
+\end{document}
+
