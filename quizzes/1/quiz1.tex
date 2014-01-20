@@ -46,9 +46,9 @@
 \pagestyle{empty}
 \begin{document}
 
-\noindent {\large \bf Name: \line(1,0){200} \hfill Quiz 1}
+\noindent {\large \bf Name: Sean Rettig \hfill Quiz 1}
 
-\noindent {\large \bf ID\#: \line(1,0){200} }
+\noindent {\large \bf ID\#: 931-650-839 }
 
 {\Large CS311 Operating Systems I}
 
@@ -62,30 +62,71 @@
 \begin{enumerate}[itemsep=0.1 in]
 \item What is the name of your TA?
 
+Devlin Junker
+
 \item In \LaTeX, what are environments? Describe why they are useful.
+
+Environments are zones in which text is treated in a special way.  They are useful because they allow one to specify the general format of a block of text (such as an equation, a list, etc.) without having to manually typeset it.
 
 \item What is a \emph{process}? How are processes created? How are processes terminated?
   What IDs are associated with a process, and what are they used for?
 
+  Processes are instances of running programs. They are created by other processes using the fork() system call, and are terminated either by running the \_exit() system call from within the program, or by sending the program a signal. All processes have the following IDs:
+
+  \begin{itemize}
+    \item Process Identifier (PID): A unique ID for a process.
+    \item Parent Process Identifier (PPID): The PID of the process which requested a process's creation.
+    \item Real user ID: The user to which a process belongs.
+    \item Real group ID: The group to which a process belongs.
+    \item Effective user ID: The user whose permissions a process inherits.
+    \item Effective group ID: The group whose permissions a process inherits.
+    \item Supplementary group IDs: Additional groups whose permissions a process inherits.
+  \end{itemize}
+
+  These IDs are used to uniquely identify processes, as well determine their origins and permissions.
+
 \item What is the environment in UNIX, and why is it important to the execution of a
   process?
 
+  Environments are execution contexts in which programs can run. Environments are important to processes because they can be used to store persistent variables and provide information to child processes, as child processes generally inherit a copy of their parent's environment when they are created.
+
 \item Draw the OS stack.
 
+
+
 \item Why did Baron M\"unchhausen deny traveling a mile on a cannon ball? 
+
+So he wouldn't get fired.
 
 \item Each process has 4 general memory segments. What are they? What sorts of things are
   stored in each? Where are they relative to one another?
 
+  \begin{itemize}
+    \item Text: the program's instructions.
+    \item Data: the program's static variables.
+    \item Heap: a space where the program can dynamically allocate memory.
+    \item Stack: a dynamically resizing space that stores the program's currently relevant functions and local variables.
+  \end{itemize}
+
+
+
 \item What is the \texttt{/proc} filesystem? How does it differ from the \texttt{/sys}
   filesystem?
 
+  The /proc filesystem is a virtual filesystem that represents kernel data structures as files and directories to provide information regarding various process and system attributes.  /sys is also a virtual filesystem that provides an interface to kernel data structures, but differs from /proc in that exports information about devices and other kernel objects into user space.
+
 \item What is a system call, and what is the path through the system?
+
+System calls allow processes to request the kernel to perform privileged actions for them. The execution of a system call involves invoking a wrapper function from the C library, which handles copying the system call number and any arguments to the specific registers the kernel intends to read from and switching the processor from user mode to kernel mode.  The kernel then invokes the system\_call() routine, which saves the register values to the kernel stack, checks the validity of the system call number, and then invokes the appropriate system call service routine.  This routine, after checking the validity of the arguments, actually performs the desired task, and returns its result status.  The register values from the kernel stack are then restored, and the system call value is placed on the stack for the wrapper function to return as it returns the processor to user mode.
 
 \item Explain the use of feature test macros, and why they are important.
 
+Feature test macros allow header files to expose only the definitions that follow a particular standard.  They are important because they can improve the portability of programs by suppressing behaviors that do not conform to a particular system's standard.
+
 \item Describe the concept of portability, some issues related to it, and how we deal
   with it in this class.
+
+  The concept of portability with respect to programs implies that a program will run and behave consistently on systems that conform to various standards.
 
 \item In subversion, a \emph{commit} pushes all changes to the central repository. What
   is the git equivalent of this, and why do you think it is the way it is?
