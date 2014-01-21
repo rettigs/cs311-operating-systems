@@ -1,6 +1,6 @@
 TARGET=answers
 
-default: pdf pdf2 prog
+default: pdf pdf2 c
 
 dvi: ${TARGET}.tex 
 #	pygmentize the input source file -- THIS NAME SHOULD BE SAFE
@@ -39,8 +39,23 @@ ps2: dvi2
 pdf2: ps2
 	ps2pdf ${TARGET2}.ps
 
-sieve.o: sieve.c sieve.h
-    gcc -g -Wall -std=c99 -c sieve.c
+CC = icc
+CFLAGS = -Wall -std=c99 -openmp -O3 -g -I.
+#overkill on the flags, but that doesn't hurt anything
+LDFLAGS = -lrt -lpthread -lm
+#replace this if you want to change the output name
+CTARGET = sieve
 
-prog: sieve.o
-    gcc -g -Wall -std=c99 -o prog sieve.o
+#any headers go here
+INCLUDES = sieve.h
+
+#any .c or .cpp files go here
+SOURCE = sieve.c
+
+#depends on all of you source and header files
+c: ${SOURCE} ${INCLUDES}
+#this assumes you actually are linking all of the source files together
+	${CC} ${CFLAGS} ${SOURCE} -o ${CTARGET} ${LDFLAGS}
+
+#	debug: ${SOURCE} ${INCLUDES}
+#	${CC} ${CFLAGS} ${SOURCE} -o ${TARGET} ${LDFLAGS} -DDEBUG
