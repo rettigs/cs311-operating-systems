@@ -1,10 +1,6 @@
 TARGET=answers
-HTML=main_html
-SRC={$TARGET}
 
-default: pdf
-
-both: pdf html
+default: pdf pdf2
 
 dvi: ${TARGET}.tex 
 #	pygmentize the input source file -- THIS NAME SHOULD BE SAFE
@@ -23,15 +19,22 @@ ps: dvi
 pdf: ps
 	ps2pdf ${TARGET}.ps
 
-
-html:
-	cp ${TARGET}.tex ${HTML}.tex
-	latex ${HTML}.tex
-	latex2html -split 0 -noshow_section_numbers -local_icons -no_navigation -noinfo -noaddress ${HTML}
-
-	sed 's/<BR><HR>//g' < ${HTML}/index.html > ${HTML}/index2.html
-	mv ${HTML}/index2.html ${TARGET}.html
-	rm ${HTML}.*
-	rm -rf ${HTML}
+TARGET2=surface_integral
 
 
+dvi2: ${TARGET2}.tex 
+#	pygmentize the input source file -- THIS NAME SHOULD BE SAFE
+#	pygmentize -f latex -o __${TARGET2}.tex ${TARGET2}.tex
+#	run latex twice to get references correct
+	latex ${TARGET2}.tex
+#	you can also have a bibtex line here
+#	bibtex $(TARGET2)
+	latex $(TARGET2).tex
+#	remove the pygmentized output to avoid cluttering up the directory
+#	rm __${TARGET2}.tex
+
+ps2: dvi2
+	dvips -R -Poutline -t letter ${TARGET2}.dvi -o ${TARGET2}.ps
+
+pdf2: ps2
+	ps2pdf ${TARGET2}.ps
