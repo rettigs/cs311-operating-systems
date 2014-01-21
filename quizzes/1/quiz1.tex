@@ -62,15 +62,20 @@
 \begin{enumerate}[itemsep=0.1 in]
 \item What is the name of your TA?
 
+\begin{quote}
 Devlin Junker
+\end{quote}
 
 \item In \LaTeX, what are environments? Describe why they are useful.
 
+\begin{quote}
 Environments are zones in which text is treated in a special way.  They are useful because they allow one to specify the general format of a block of text (such as an equation, a list, etc.) without having to manually typeset it.
+\end{quote}
 
 \item What is a \emph{process}? How are processes created? How are processes terminated?
   What IDs are associated with a process, and what are they used for?
 
+\begin{quote}
   Processes are instances of running programs. They are created by other processes using the fork() system call, and are terminated either by running the \_exit() system call from within the program, or by sending the program a signal. All processes have the following IDs:
 
   \begin{itemize}
@@ -84,23 +89,52 @@ Environments are zones in which text is treated in a special way.  They are usef
   \end{itemize}
 
   These IDs are used to uniquely identify processes, as well determine their origins and permissions.
+\end{quote}
 
 \item What is the environment in UNIX, and why is it important to the execution of a
   process?
 
+\begin{quote}
   Environments are execution contexts in which programs can run. Environments are important to processes because they can be used to store persistent variables and provide information to child processes, as child processes generally inherit a copy of their parent's environment when they are created.
+\end{quote}
 
+\begin{samepage}
 \item Draw the OS stack.
 
-
+    \begin{quote}
+        \begin{verbatim}
+                                                         RAM
+                                                        +---+
+                                                      />| 0 |
+         process virtual                             /  +---+
+          address space          page table         /   | 1 |
+            +--------+          +----------+       /    +---+
+            | page 0 |   --->   |    4     |----\ //--->| 2 |
+ increasing +--------+          +----------+     X/     +---+
+  virtual   | page 1 |   --->   |    2     |----//\ /-->| 3 |
+ addresses  +--------+          +----------+   /   X    +---+
+     |      | page 2 |   --->   |    7     |--X   / \-->| 4 |
+     |      +--------+          +----------+ / \ /      +---+
+     V      | page 3 |   --->   |    0     |/   X       | 5 |
+            +--------+          +----------+   / \      +---+
+            | page 4 |   --->   |    3     |--/   \     | 6 |
+            +--------+          +----------+       \    +---+
+                                                    \-->| 7 |
+                                                        +---+
+        \end{verbatim}
+    \end{quote}
+\end{samepage}
 
 \item Why did Baron M\"unchhausen deny traveling a mile on a cannon ball? 
 
-So he wouldn't get fired.
+\begin{quote}
+Because he didn't want to get fired.
+\end{quote}
 
 \item Each process has 4 general memory segments. What are they? What sorts of things are
   stored in each? Where are they relative to one another?
 
+\begin{quote}
   \begin{itemize}
     \item Text: the program's instructions.
     \item Data: the program's static variables.
@@ -108,67 +142,97 @@ So he wouldn't get fired.
     \item Stack: a dynamically resizing space that stores the program's currently relevant functions and local variables.
   \end{itemize}
 
-
+The program text is at the low end of the program's virtual memory address space.  This is followed by the initialized and uninitialized data, and then the heap, which grows upwards into unallocated memory space.  Above this unallocated space is the program stack, which grows downwards toward the heap.  Finally, above the stack are the programs's arguments and environment variables.  The kernel is also mapped into the process's virtual memory at the very top, but it is not accessible to the program.
+\end{quote}
 
 \item What is the \texttt{/proc} filesystem? How does it differ from the \texttt{/sys}
   filesystem?
 
+\begin{quote}
   The /proc filesystem is a virtual filesystem that represents kernel data structures as files and directories to provide information regarding various process and system attributes.  /sys is also a virtual filesystem that provides an interface to kernel data structures, but differs from /proc in that exports information about devices and other kernel objects into user space.
+\end{quote}
 
 \item What is a system call, and what is the path through the system?
 
+\begin{quote}
 System calls allow processes to request the kernel to perform privileged actions for them. The execution of a system call involves invoking a wrapper function from the C library, which handles copying the system call number and any arguments to the specific registers the kernel intends to read from and switching the processor from user mode to kernel mode.  The kernel then invokes the system\_call() routine, which saves the register values to the kernel stack, checks the validity of the system call number, and then invokes the appropriate system call service routine.  This routine, after checking the validity of the arguments, actually performs the desired task, and returns its result status.  The register values from the kernel stack are then restored, and the system call value is placed on the stack for the wrapper function to return as it returns the processor to user mode.
+\end{quote}
 
 \item Explain the use of feature test macros, and why they are important.
 
+\begin{quote}
 Feature test macros allow header files to expose only the definitions that follow a particular standard.  They are important because they can improve the portability of programs by suppressing behaviors that do not conform to a particular system's standard.
+\end{quote}
 
 \item Describe the concept of portability, some issues related to it, and how we deal
   with it in this class.
 
+\begin{quote}
   The concept of portability with respect to programs implies that a program will run and behave consistently on systems that conform to various standards.  Making programs portable can be complex because systems may utilize different, unexpected data types and structures, and may not support the same features as all other systems.  These issues are mitigated by using feature test macros to expose definitions for particular standards when needed, using abstracted, standardized data types, and by checking if certain features or macros exist before using them.
+\end{quote}
 
 \item In subversion, a \emph{commit} pushes all changes to the central repository. What
   is the git equivalent of this, and why do you think it is the way it is?
 
+\begin{quote}
   To push changes in git, you must first add them to a commit, then commit, then push.  The need to add certain files to commits manually is likely to help users keep commits focused on single features or fixes, rather than lumping potentially unrelated changes into single commits.  The distinction between commiting and pushing is likely due to Git's ability to work offline; you can commit like normal while developing, and then push once you have a network connection.
+\end{quote}
 
 \item Virtual memory, as implemented by Linux, provides two specific advantages. What are
   they, and why are they advantages?
 
+\begin{quote}
   \begin{itemize}
     \item Processes are isolated from each other and the kernel so that they cannot access each others' memory, which helps keep the system stable and predictable.
     \item Only parts of processes need to be kept in memory, so more processes can be held in memory at once.  This increases CPU utilization (and therefore system speed/efficiency) by increasing the chances of there being a program ready to execute at any given time.
   \end{itemize}
+\end{quote}
 
 \item Error checking is a fundamental aspect of systems programming. Describe how this
   works. What facilities are created for you to deal with possible errors? How are they
   used?
 
+\begin{quote}
   It is imperative to check the return status of system calls and library functions to ensure that they completed successfully.  These can be checked using simple integer comparison, and the manual pages will describe what the return values indicate.  For system calls, the global variable errno is set, which can then be checked to identify the specific error, if there is one.  Additionally, the perror() function is provided to print the relevant error message in human-readable form.
+\end{quote}
 
 \item Describe the differences in structure and usage of shared vs. static libraries.
 
+\begin{quote}
 Static libraries are linked directly from and built into programs, while shared libraries exist individually and can be referenced dynamically by multiple programs.  Because only one instance of a shared library exists on the disk and in memory, this saves resources compared to static libraries, of which multiple identical copies may be stored for separate programs.  Additionally, unlike with static libraries, programs do not need to be rebuilt when changes are made to a shared library; all programs can utilize the newest version of the library instantly.
+\end{quote}
 
 \item What is IPC, and what are some examples of it? What purpose does it serve?
 
+\begin{quote}
 IPC, or InterProcess Communication, is a set of methods which processes can utilize to exchange information, examples of which include signals, semaphores, pipes, FIFOs, sockets, message queues, shared memory, and file locking.  Processes can use these various methods to coordinate and distribute tasks amongst themselves, potentially accomplishing more than single, independent processes would.
+\end{quote}
 
 \item What are different ways to take advantage of multi-core or multi-processor systems?
 
+\begin{quote}
 Programs can be written to divide tasks between multiple processes or threads to distribute workloads and complete them more quickly.
+\end{quote}
 
 \item Explain the difference between user space and kernel space.
 
-
+\begin{quote}
+User space is an area of memory which is accessible to the processor while it it in user mode.  Kernel space is an area of memory that is only accessible while the processor is in kernel mode.
+\end{quote}
 
 \item The UNIX I/O model is known as a \emph{universal I/O model}. Why? What advantages
   does this bring? How does this relate to file descriptors?
 
+\begin{quote}
+  The UNIX I/O model is known as universal because all I/O is modeled as sequential streams of bytes, regardless of what it is interfacing with.  This has the advantage that code written to work with one type of file can also work with other types of files.  All I/O is abstracted as files and all operations are performed using file descriptors and the open(), close(), read(), and write() systems calls.
+\end{quote}
+
 \item\label{last} In python, the \texttt{subprocess} module serves what purpose? Why is
   this particularly useful?
 
+\begin{quote}
+  The Python subprocess module allows programs to spawn new processes, connect to their input/output pipes, and obtain their return codes.  This is particularly useful because not only is it extremely flexible, but it also doesn't necessitate all of the handling that is normally required for fork().
+\end{quote}
 
 \end{enumerate}
 
