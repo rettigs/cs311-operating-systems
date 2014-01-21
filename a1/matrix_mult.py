@@ -21,7 +21,6 @@ def matrix_mult(a, b):
         for i in range(rows):
             for j in range(cols):
                 for k in range(iters):
-                    print "c[%d][%d] += a[%d][%d] * b[%d][%d]" % (i, j, i, k, k, j)
                     c[i][j] += a[i][k] * b[k][j]
         return c
 
