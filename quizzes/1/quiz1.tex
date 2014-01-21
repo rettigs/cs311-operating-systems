@@ -126,25 +126,42 @@ Feature test macros allow header files to expose only the definitions that follo
 \item Describe the concept of portability, some issues related to it, and how we deal
   with it in this class.
 
-  The concept of portability with respect to programs implies that a program will run and behave consistently on systems that conform to various standards.
+  The concept of portability with respect to programs implies that a program will run and behave consistently on systems that conform to various standards.  Making programs portable can be complex because systems may utilize different, unexpected data types and structures, and may not support the same features as all other systems.  These issues are mitigated by using feature test macros to expose definitions for particular standards when needed, using abstracted, standardized data types, and by checking if certain features or macros exist before using them.
 
 \item In subversion, a \emph{commit} pushes all changes to the central repository. What
   is the git equivalent of this, and why do you think it is the way it is?
 
+  To push changes in git, you must first add them to a commit, then commit, then push.  The need to add certain files to commits manually is likely to help users keep commits focused on single features or fixes, rather than lumping potentially unrelated changes into single commits.  The distinction between commiting and pushing is likely due to Git's ability to work offline; you can commit like normal while developing, and then push once you have a network connection.
+
 \item Virtual memory, as implemented by Linux, provides two specific advantages. What are
   they, and why are they advantages?
+
+  \begin{itemize}
+    \item Processes are isolated from each other and the kernel so that they cannot access each others' memory, which helps keep the system stable and predictable.
+    \item Only parts of processes need to be kept in memory, so more processes can be held in memory at once.  This increases CPU utilization (and therefore system speed/efficiency) by increasing the chances of there being a program ready to execute at any given time.
+  \end{itemize}
 
 \item Error checking is a fundamental aspect of systems programming. Describe how this
   works. What facilities are created for you to deal with possible errors? How are they
   used?
 
+  It is imperative to check the return status of system calls and library functions to ensure that they completed successfully.  These can be checked using simple integer comparison, and the manual pages will describe what the return values indicate.  For system calls, the global variable errno is set, which can then be checked to identify the specific error, if there is one.  Additionally, the perror() function is provided to print the relevant error message in human-readable form.
+
 \item Describe the differences in structure and usage of shared vs. static libraries.
+
+Static libraries are linked directly from and built into programs, while shared libraries exist individually and can be referenced dynamically by multiple programs.  Because only one instance of a shared library exists on the disk and in memory, this saves resources compared to static libraries, of which multiple identical copies may be stored for separate programs.  Additionally, unlike with static libraries, programs do not need to be rebuilt when changes are made to a shared library; all programs can utilize the newest version of the library instantly.
 
 \item What is IPC, and what are some examples of it? What purpose does it serve?
 
+IPC, or InterProcess Communication, is a set of methods which processes can utilize to exchange information, examples of which include signals, semaphores, pipes, FIFOs, sockets, message queues, shared memory, and file locking.  Processes can use these various methods to coordinate and distribute tasks amongst themselves, potentially accomplishing more than single, independent processes would.
+
 \item What are different ways to take advantage of multi-core or multi-processor systems?
 
+Programs can be written to divide tasks between multiple processes or threads to distribute workloads and complete them more quickly.
+
 \item Explain the difference between user space and kernel space.
+
+
 
 \item The UNIX I/O model is known as a \emph{universal I/O model}. Why? What advantages
   does this bring? How does this relate to file descriptors?
