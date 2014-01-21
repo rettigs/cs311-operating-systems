@@ -1,7 +1,46 @@
-all: prog
+TARGET=answers
+
+default: pdf pdf2 prog
+
+dvi: ${TARGET}.tex 
+#	pygmentize the input source file -- THIS NAME SHOULD BE SAFE
+#	pygmentize -f latex -o __${TARGET}.tex ${TARGET}.tex
+#	run latex twice to get references correct
+	latex ${TARGET}.tex
+#	you can also have a bibtex line here
+#	bibtex $(TARGET)
+	latex $(TARGET).tex
+#	remove the pygmentized output to avoid cluttering up the directory
+#	rm __${TARGET}.tex
+
+ps: dvi
+	dvips -R -Poutline -t letter ${TARGET}.dvi -o ${TARGET}.ps
+
+pdf: ps
+	ps2pdf ${TARGET}.ps
+
+TARGET2=surface_integral
+
+
+dvi2: ${TARGET2}.tex 
+#	pygmentize the input source file -- THIS NAME SHOULD BE SAFE
+#	pygmentize -f latex -o __${TARGET2}.tex ${TARGET2}.tex
+#	run latex twice to get references correct
+	latex ${TARGET2}.tex
+#	you can also have a bibtex line here
+#	bibtex $(TARGET2)
+	latex $(TARGET2).tex
+#	remove the pygmentized output to avoid cluttering up the directory
+#	rm __${TARGET2}.tex
+
+ps2: dvi2
+	dvips -R -Poutline -t letter ${TARGET2}.dvi -o ${TARGET2}.ps
+
+pdf2: ps2
+	ps2pdf ${TARGET2}.ps
 
 sieve.o: sieve.c sieve.h
-        gcc -g -Wall -std=c99 -c sieve.c
+    gcc -g -Wall -std=c99 -c sieve.c
 
 prog: sieve.o
-        gcc -g -Wall -std=c99 -o prog sieve.o
+    gcc -g -Wall -std=c99 -o prog sieve.o
