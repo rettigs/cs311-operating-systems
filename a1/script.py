@@ -32,7 +32,7 @@ def main():
                                 if t is None or c is None:
                                         print "-t or --term must specify a term and -c or --course must specify a course"
                                 else:
-                                        a1(t, c)
+                                        a3(t, c)
                         elif a in options:
                                 options[a]()
                         else:
