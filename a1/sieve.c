@@ -19,7 +19,7 @@ primes * sieve (int n)
         int *values = malloc(sizeof(int) * (n + 1));
         int i;
         for(i = 1; i <= n; i++){
-                values[i] = i;
+                values[i] = 0;
         }
 
         /* Mark the number 1 as special */
@@ -29,10 +29,16 @@ primes * sieve (int n)
         int k;
         for(k = 1; k <= sqrt(n); k++){
                 /* Find first number in the array m greater than k that has not been identified as composite */
-                int m = k + 1;
+                int m = 1;
+                int i;
+                for(i = 1; i <= n+1; i++){
+                    if(i > k && values[i] != 0){
+                        m = i;
+                        break;
+                    }
+                }
 
                 /* Mark multiples of m as composite */
-                int i;
                 for(i = 2; i*m <= n; i++){
                         values[i*m] = 0;
                 }
