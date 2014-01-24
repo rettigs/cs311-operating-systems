@@ -1,0 +1,79 @@
+\documentclass[letterpaper,10pt,fleqn]{article}
+
+%example of setting the fleqn parameter to the article class -- the below sets the offset from flush left (fl)
+\setlength{\mathindent}{1cm}
+
+\usepackage{graphicx}                                        
+
+\usepackage{amssymb}                                         
+\usepackage{amsmath}                                         
+\usepackage{amsthm}                                          
+
+\usepackage{alltt}                                           
+\usepackage{float}
+\usepackage{color}
+
+\usepackage{balance}
+\usepackage[TABBOTCAP, tight]{subfigure}
+\usepackage{enumitem}
+
+\usepackage{pstricks, pst-node}
+
+%the following sets the geometry of the page
+\usepackage{geometry}
+\geometry{textheight=9in, textwidth=6.5in}
+
+% random comment
+
+\newcommand{\cred}[1]{{\color{red}#1}}
+\newcommand{\cblue}[1]{{\color{blue}#1}}
+
+\usepackage{hyperref}
+
+\usepackage{textcomp}
+\usepackage{listings}
+
+\usepackage{wasysym}
+
+\def\name{Sean Rettig}
+
+%% The following metadata will show up in the PDF properties
+\hypersetup{
+  colorlinks = true,
+  urlcolor = black,
+  pdfauthor = {\name},
+  pdfkeywords = {cs311 ``operating systems''},
+  pdftitle = {CS 311 Project},
+  pdfsubject = {CS 311 Project},
+  pdfpagemode = UseNone
+}
+
+\parindent = 0.0 in
+\parskip = 0.2 in
+
+\pagestyle{empty}
+
+\numberwithin{equation}{section}
+
+\newcommand{\D}{\mathrm{d}}
+
+\newcommand\invisiblesection[1]{%
+  \refstepcounter{section}%
+  \addcontentsline{toc}{section}{\protect\numberline{\thesection}#1}%
+  \sectionmark{#1}}
+
+\begin{document}
+
+%to remove page numbers, set the page style to empty
+
+\noindent {\large \bf Name: Sean Rettig \hfill Summary 7}
+
+\noindent {\large \bf ID\#: 931-650-839 }
+
+{\Large CS311 Operating Systems I}
+
+\subsection*{TLPI Chapter 5}
+
+The reading focused heavily on I/O concurrency issues and some tools that can be used to help mitigate them, with one of the key concepts being atomicity--the quality of a process to be executed as a single, uninterruptible operation.  Examples of these tools include O\_EXCL and O\_APPEND, which are useful to prevent race conditions when multiple threads/processes attempt to create or append data to files, and pread()/pwrite(), which can be used to perform I/O at arbitrary offsets, allowing multiple threads/processes to perform I/O in the same file without without having to worry about any of the others changing the file's single, shared offset.  Also heavily discussed were the concept of file descriptors, how they relate to open files, how they are stored and managed, how they are used and duplicated, and how their flags can be read and modified.  Briefly covered was nonblocking and large file I/O, as well as convenience functions such as truncate() (used to truncate files), mkstemp()/tmpfile() (which allow for easy temporary file creation) and readv()/writev()/preadv()/pwritev() (which allow multiple buffers to be read or written to single files atomically).
+
+\end{document}
