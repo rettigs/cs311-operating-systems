@@ -1,0 +1,81 @@
+\documentclass[letterpaper,10pt,fleqn]{article}
+
+%example of setting the fleqn parameter to the article class -- the below sets the offset from flush left (fl)
+\setlength{\mathindent}{1cm}
+
+\usepackage{graphicx}                                        
+
+\usepackage{amssymb}                                         
+\usepackage{amsmath}                                         
+\usepackage{amsthm}                                          
+
+\usepackage{alltt}                                           
+\usepackage{float}
+\usepackage{color}
+
+\usepackage{balance}
+\usepackage[TABBOTCAP, tight]{subfigure}
+\usepackage{enumitem}
+
+\usepackage{pstricks, pst-node}
+
+%the following sets the geometry of the page
+\usepackage{geometry}
+\geometry{textheight=9in, textwidth=6.5in}
+
+% random comment
+
+\newcommand{\cred}[1]{{\color{red}#1}}
+\newcommand{\cblue}[1]{{\color{blue}#1}}
+
+\usepackage{hyperref}
+
+\usepackage{textcomp}
+\usepackage{listings}
+
+\usepackage{wasysym}
+
+\def\name{Sean Rettig}
+
+%% The following metadata will show up in the PDF properties
+\hypersetup{
+  colorlinks = true,
+  urlcolor = black,
+  pdfauthor = {\name},
+  pdfkeywords = {cs311 ``operating systems''},
+  pdftitle = {CS 311 Project},
+  pdfsubject = {CS 311 Project},
+  pdfpagemode = UseNone
+}
+
+\parindent = 0.0 in
+\parskip = 0.2 in
+
+\pagestyle{empty}
+
+\numberwithin{equation}{section}
+
+\newcommand{\D}{\mathrm{d}}
+
+\newcommand\invisiblesection[1]{%
+  \refstepcounter{section}%
+  \addcontentsline{toc}{section}{\protect\numberline{\thesection}#1}%
+  \sectionmark{#1}}
+
+\begin{document}
+
+%to remove page numbers, set the page style to empty
+
+\noindent {\large \bf Name: Sean Rettig \hfill Summary 9}
+
+\noindent {\large \bf ID\#: 931-650-839 }
+
+{\Large CS311 Operating Systems I}
+
+\subsection*{TLPI Chapters 10 and 12}
+
+Chapter 10 focused on the concept of time, with respect to both ``real time'' (or ``calendar'' time) and ``process time'' (or the amount of CPU time a process has used).  The main focus of the chapter was on the various methods of retrieving, storing, and displaying calendar time, including the various methods with which to localize times to ensure appropriate representation between various time zones and locales.  On UNIX systems, calendar time is stored as the number of seconds since the Epoch, or 0:00 on 1970-01-01.  The current time can be retrieved as a time\_t struct through the time() system call, and can be converted by functions such as gmtime() and localtime() into what is called ``broken-down time'', a struct of the type tm that stores the various fields of a time and date individually (such as hours, months, years, etc.) so that it can be understood more readily by humans.  Broken-down time can be further converted into formatted strings, such as through the asctime() or strftime() functions.  Briefly mentioned are the ability update the system clock (as through the settimeofday() or adjtime() functions), the concept of the software clock (which measures time in ``jiffies'', the smallest unit in which the CPU is able to allocate time to processes), and the various methods of measuring this process time, while also making the distinction between user CPU time (the amount of time a process spends executing in user mode) and system CPU time (the amount of time spent executing in kernel mode on behalf of a process).
+
+Chapter 12 focused mainly on the /proc filesystem, a virtual filesystem that provides and simple and consistent interface to kernel data structures by representing them as regular files and directories which provide information regarding process and system attributes (and in some cases, can even be modified).  Every process on the system has a directory at /proc/PID which contains various files and subdirectories that describe it, including the fd directory (which links all open file descriptors for that process), the task directory (which holds thread information), and the status folder (which has various other process attributes, such as name, memory usage, etc.).  /proc also has other files and directories which provide information pertaining to file systems, networking, etc.  Also mentioned was the uname() system call, which also provides identifying information for the system.
+
+\end{document}
