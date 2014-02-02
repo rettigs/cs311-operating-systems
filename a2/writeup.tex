@@ -71,16 +71,27 @@
 
 \subsection*{Design}
 \begin{itemize}
-        \item For all functions, myar first opens/creates the archive file and checks to make sure that it is a valid archive by reading the header and comparing it to ARMAG.  It only continues if they match.
-        \item For -q, for each file to be archived, myar seeks to the end of the file, stats the next file, copies the data into an ar\_hdr, then writes the ar\_hdr to the archive, after which it does a byte-by-byte copy of the contents of the file itself.
-        \item For -x, for each file in the archive, myar reads the name, and if it matches any of the file name arguments, it will create the file and do a byte-by-byte copy.  It will then set the file metadata using the other information in the header, and remove that file name from the list to check for.  After each header check, it lseeks ahead by the filesize in that header so that it can read the next header (or hit the end of the archive).
-        \item For -t, myar follows a very similar process to -x, but rather than creating a file, it just prints the filename (and metadata, if specified with -v) and lseeks to the next header.
-        \item For -d, for each file in the archive, it reads the header, and if the file name matches the list of files to delete, it skips to the next header and removes that file name from the list to check for.  If the file name does not match, it unlinks the current archive and creates a new archive with the same name (if one doesn't already exist) and copies over both that header and its corresponding file data.  Once the entire archive has been processed, it is deleted.
-        \item For -A, myar simply stats the current directory and passes all regular files to the -q function.  In actually implementing this, I decided to simply call the -q function for every file to simplify the code.  This method does not require creating an array of filenames for which we don't know the size of beforehand.
-        \item For -w, it stats the current directory and then stats each regular file in the directory, storing each of the file names and modification times.  It then traverses the archive looking for file headers with the same name but an older modifcation time, and if it finds any, it simply calls the -q function on them to add the new versions to the end of the archive.
-        \item For -v, all of the previous functions will simply have extra printf statements that describe what is happening and only activate if the verbose flag is set.
+    \item Bdiff will open both files for reading and will read in bytes in chunks of 4096 (for performance reasons), compare them, output the results, and repeat until one of the files ends.
+    \item Bdiff -b will simply print both the octal value and character representation of each byte.
+    \item Bdiff -i will simply offset where it starts reading each file.
+    \item Bdiff -n will simply stop comparing early once it has compared the given number of bytes.
+    \item Bdiff -s will simply not print anything, only return an exit status.  For perforamnce reasons, it will stop comparing once it has found at least one difference.
+    \item Bdiff -r will open the directory streams using the opendir() system call and compare them as normal.
+    \item Bpatch \[-r\] will read the output of bdiff and fill a buffer of 4096 bytes with patch data until it finds a non-sequential run or until the buffer fills up, at which point it will write all changes to the file/directory at once and then start filling another buffer (until all of the bdiff output has been processed).
 \end{itemize}
 
 \subsection*{Work Log}
+
+\subsection*{Challenges Overcame}
+\begin{itemize}
+    \item Does bdiff need to accept human-readable numbers for -n?
+    \item Does bpatch need to accept the output of bdiff -b?
+\end{itemize}
+
+\subsection*{Questions}
+\begin{enumerate}
+    \item The main point of the assignment was to learn the basics of performing file I/O in C using the Linux programming interface.
+    \item 
+\end{enumerate}
 
 \end{document}
