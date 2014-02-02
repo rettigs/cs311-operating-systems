@@ -1,0 +1,203 @@
+\documentclass[letterpaper,10pt,onecolumn,titlepage]{article}
+
+\usepackage{graphicx}                                        
+\usepackage{amssymb}                                         
+\usepackage{amsmath}                                         
+\usepackage{amsthm}                                          
+
+\usepackage{alltt}                                           
+\usepackage{float}
+\usepackage{color}
+\usepackage{url}
+
+\usepackage{balance}
+\usepackage[TABBOTCAP, tight]{subfigure}
+\usepackage{enumitem}
+\usepackage{pstricks, pst-node, pst-tree}
+
+
+\usepackage{geometry}
+\geometry{textheight=9.5in, textwidth=7in, bmargin=1in}
+
+% random comment
+
+\newcommand{\cred}[1]{{\color{red}#1}}
+\newcommand{\cblue}[1]{{\color{blue}#1}}
+
+\usepackage{hyperref}
+\usepackage{geometry}
+
+\def\name{D. Kevin McGrath}
+
+\parindent = 0.0 in
+\parskip = 0.1 in
+
+%% The following metadata will show up in the PDF properties
+\hypersetup{
+  colorlinks = true,
+  urlcolor = black,
+  pdfauthor = {\name},
+  pdfkeywords = {cs411 ``operating systems'' files filesystem I/O},
+  pdftitle = {CS 411 Final},
+  pdfsubject = {CS 411 Final},
+  pdfpagemode = UseNone
+}
+
+\pagestyle{empty}
+\begin{document}
+
+\noindent {\large \bf Name: \line(1,0){200} \hfill Quiz 2}
+
+\noindent {\large \bf ID\#: \line(1,0){200} }
+
+{\Large CS311 Operating Systems I}
+
+\emph{Please use this \LaTeX\ file as a template, and answer the following questions.
+  Please be detailed in your answers.}
+
+\emph{There are \ref{last} questions on this quiz. Please answer all of them clearly.
+  Points are awarded for more complete answers. Brevity buys you nothing.}
+
+\emph{You will be turning in the complete version of this file, plus a makefile to build
+  it. Please ensure you fill out the name and ID fields above, as well.}
+
+\begin{enumerate}%[itemsep=0.1 in]
+\item What is the name of your TA?
+
+\begin{quote}
+Devlin Junker
+\end{quote}
+
+\item Describe the concept of scatter/gather I/O. How does one perform such I/O in C?
+  What benefits or downsides does it have?
+
+\begin{quote}
+Scatter/gather I/O is a mechanism by which data can be read from or written to a file using multiple sequential buffers while remaining an atomic operation.  It can be performed using the readv(), writev(), preadv(), and/or pwritev() system calls.  The primary benefit of scatter/gather I/O is convenience and speed, as it eliminates the need to perform multiple I/O calls (or convert buffers with a single I/O call) in the event that multiple buffers need to be read/written.
+\end{quote}
+
+\item The third argument for \texttt{lseek} is \emph{whence}. What values can this
+  parameter take on, and what does each mean?
+
+\begin{quote}
+
+\end{quote}
+
+\item Describe at least 3 ways to time your code. What are the positives and negatives of
+  each method?
+
+\begin{quote}
+
+\end{quote}
+
+\item What system call is used to change the timestamp on a file? What restrictions are
+  imposed on you when you use this function?
+
+\begin{quote}
+
+\end{quote}
+
+\item Describe the process of installing a signal handler using \texttt{sigaction},
+  including any specific issues that need to be considered.
+
+\begin{quote}
+
+\end{quote}
+
+\item Signals can be handled in 3 ways. Name them. What constants are defined for your
+  use in setting these actions? Is one way better to use than others?
+
+\begin{quote}
+
+\end{quote}
+
+\item Give the definition of the \texttt{siginfo\_t} struct, and describe each of the
+  fields.
+
+\begin{quote}
+
+\end{quote}
+
+\item How do system calls and signals interact?
+
+\begin{quote}
+
+\end{quote}
+
+\item What are \emph{async-signal-safe} functions? Give some examples, and explain why
+  they are safe. What are some common functions that aren't safe, and why?
+
+\begin{quote}
+
+\end{quote}
+
+\item Describe the purpose and usage of the signal mask.
+
+\begin{quote}
+
+\end{quote}
+
+\item In what ways can a user send a signal to a process?
+
+\begin{quote}
+
+\end{quote}
+
+\item Different functions impact the timestamp on a file in different ways. Give some
+  examples, the resulting timestamps that change, and explain why this is.
+
+\begin{quote}
+
+\end{quote}
+
+\item What is the purpose of the \texttt{/proc} filesystem? How is it used? What types of
+  information can be found there?
+
+\begin{quote}
+
+\end{quote}
+
+\item Explain the idea of locales.
+
+\begin{quote}
+
+\end{quote}
+
+\item What time did the epoch start, locally?
+
+\begin{quote}
+
+\end{quote}
+
+\item Give a call to \texttt{strftime()} that would replicate the output of
+  \texttt{asctime()}.
+
+\begin{quote}
+
+\end{quote}
+
+\item What are the different representations of time used by POSIX systems?
+
+\begin{quote}
+
+\end{quote}
+
+\item There are several ways to duplicate a file descriptor. Compare and contrast them.
+
+\begin{quote}
+
+\end{quote}
+
+\item \label{last} Describe, in words, the relationship between the per-process file
+  descriptor tables, the system wide open file table, and the system-wide inode table.
+
+\begin{quote}
+
+\end{quote}
+
+\end{enumerate}
+
+% \clearpage\null
+
+\end{document}
+
+
