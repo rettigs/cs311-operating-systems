@@ -7,13 +7,13 @@ CFLAGS = -Wall -std=c99 -openmp -O3 -g -I.
 #overkill on the flags, but that doesn't hurt anything
 LDFLAGS = -lrt -lpthread -lm
 #replace this if you want to change the output name
-TARGET = myar
+TARGET = bdiff
 
 #any headers go here
-INCLUDES = myar.h
+INCLUDES = bdiff.h
 
 #any .c or .cpp files go here
-SOURCE = myar.c
+SOURCE = bdiff.c
 
 #depends on all of you source and header files
 c: ${SOURCE} ${INCLUDES}
