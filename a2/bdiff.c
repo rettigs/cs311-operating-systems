@@ -10,9 +10,11 @@
 #include <getopt.h>
 #include <string.h>
 #include <dirent.h>
+#include <math.h>
+#include <sys/param.h>
+#include "bdiff.h"
 
-#define BUFSIZE=4096
-
+int BUFSIZE = 4096;
 char *name; /* Name of the program */
 
 int verbose, offset1, offset2, limit, quiet, recursive;
@@ -22,7 +24,7 @@ int main(int argc, char *argv[])
         name = argv[0];
 
         /* Parse the flags */
-        print = offset1 = offset2 = limit = quiet = recursive = 0;
+        verbose = offset1 = offset2 = limit = quiet = recursive = 0;
         int opt;
         while ((opt = getopt(argc, argv, "binsr")) != -1) {
                 switch (opt) {
@@ -52,7 +54,7 @@ int main(int argc, char *argv[])
         char **argv2 = &argv[optind];
 
         /* Diff the files. */
-        exit(diff(argv[1], argv[2]));
+        exit(diff(argv2[0], argv2[1]));
 }
 
 /* Print usage info and exit */
@@ -97,29 +99,36 @@ printf("array[%d]: %c\n", i, array[i]);
 /* Diff two files. Returns 0 if same, 1 if different, 2 if error. */
 int diff(char *file1, char *file2)
 {
-        int fd1 = open(file1, O_RDONLY)
-        int fd2 = open(file2, O_RDONLY)
+        int fd1 = open(file1, O_RDONLY);
+        int fd2 = open(file2, O_RDONLY);
 
         if(fd1 == -1 || fd2 == -1) error("Could not open file");
 
-        int buf1[BUFSIZE];
-        int buf2[BUFSIZE];
+        char buf1[BUFSIZE];
+        char buf2[BUFSIZE];
+
+        /* Get the number of spaces to pad output with */
+        struct stat statbuf1;
+        struct stat statbuf2;
+        if(fstat(fd1, &statbuf1) == -1 || fstat(fd2, &statbuf2) == -1) error("Could not stat file");
+        int pad = ceil(log10(MAX(statbuf1.st_size, statbuf2.st_size)));
 
         int read1 = 0;
         int read2 = 0;
-
+        int byteindex = 0;
         int status = 0;
 
         for(;;){
-                read1 = read(fd1, &buf1, BUFSIZE);
-                read2 = read(fd2, &buf2, BUFSIZE);
+                read1 = read(fd1, buf1, BUFSIZE);
+                read2 = read(fd2, buf2, BUFSIZE);
 
                 if (read1 > 0 && read2 > 0){
-                        for(int i = 0; i < max(read1, read2); i++){
+                        for(int i = 0; i < MAX(read1, read2); i++){
+                                byteindex++;
                                 if(buf1[i] != buf2[i]){
                                         status = 1;
-                                        if(verbose) printf("%d\t%o\t%c\t%o\t%c", i, buf1[i], buf1[i], buf2[i], buf2[i]);
-                                        else printf("%d\t%o\t%o", i, buf1[i], buf2[i]);
+                                        if(verbose) printf("%*d %o %c    %o %c\n", pad, byteindex, buf1[i], buf1[i], buf2[i], buf2[i]);
+                                        else printf("%*d %o %o\n", pad, byteindex, buf1[i], buf2[i]);
                                 }
                         }
                 }else{
