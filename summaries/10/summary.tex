@@ -1,0 +1,81 @@
+\documentclass[letterpaper,10pt,fleqn]{article}
+
+%example of setting the fleqn parameter to the article class -- the below sets the offset from flush left (fl)
+\setlength{\mathindent}{1cm}
+
+\usepackage{graphicx}                                        
+
+\usepackage{amssymb}                                         
+\usepackage{amsmath}                                         
+\usepackage{amsthm}                                          
+
+\usepackage{alltt}                                           
+\usepackage{float}
+\usepackage{color}
+
+\usepackage{balance}
+\usepackage[TABBOTCAP, tight]{subfigure}
+\usepackage{enumitem}
+
+\usepackage{pstricks, pst-node}
+
+%the following sets the geometry of the page
+\usepackage{geometry}
+\geometry{textheight=9in, textwidth=6.5in}
+
+% random comment
+
+\newcommand{\cred}[1]{{\color{red}#1}}
+\newcommand{\cblue}[1]{{\color{blue}#1}}
+
+\usepackage{hyperref}
+
+\usepackage{textcomp}
+\usepackage{listings}
+
+\usepackage{wasysym}
+
+\def\name{Sean Rettig}
+
+%% The following metadata will show up in the PDF properties
+\hypersetup{
+  colorlinks = true,
+  urlcolor = black,
+  pdfauthor = {\name},
+  pdfkeywords = {cs311 ``operating systems''},
+  pdftitle = {CS 311 Project},
+  pdfsubject = {CS 311 Project},
+  pdfpagemode = UseNone
+}
+
+\parindent = 0.0 in
+\parskip = 0.2 in
+
+\pagestyle{empty}
+
+\numberwithin{equation}{section}
+
+\newcommand{\D}{\mathrm{d}}
+
+\newcommand\invisiblesection[1]{%
+  \refstepcounter{section}%
+  \addcontentsline{toc}{section}{\protect\numberline{\thesection}#1}%
+  \sectionmark{#1}}
+
+\begin{document}
+
+%to remove page numbers, set the page style to empty
+
+\noindent {\large \bf Name: Sean Rettig \hfill Summary 10}
+
+\noindent {\large \bf ID\#: 931-650-839 }
+
+{\Large CS311 Operating Systems I}
+
+\subsection*{TLPI Chapters 20 and 21}
+
+Chapter 20 focuses on the concept of signals, which can be described as ``software interrupts'' that can be sent to processes by the kernel, a user, or other processes to notify them of events and/or control their execution (e.g. terminate them, suspend/restart them, generate core dumps, etc.).  Signals are often represented by low positive integer values, or names that correspond to them, and each are listed in the text, along with their purposes/effects (a short version of which can also be received through the strsignal() function) and platform support information.  Processes can also change how they respond to some signals by changing their ``disposition'' via the signal() or sigaction() system calls.  This lets them either run the default action, ignore the signal, or run a ``signal handler'' when a signal is received.  Signal handlers are arbitary functions that interrupt the execution of the main process, letting the main process continue after they are done (if applicable).  Processes can send signals to themselves or other processes using functions such as kill(), raise(), and killpg().  Signals can also be represented as sets of the type sigset\_t, which is used in various signal-related system calls.  The signal mask maintained by the kernel for each process is also stored as a signal set, and describes the signals whose delivery to the process is to be blocked.  These blocked signals are said to be pending, and are stored as a mask in a signal set until they are unblocked (at which point the signals are sent to the process as normal).
+
+Chapter 21 goes further into the creation of signal handlers, detailing the considerations that need to be made regarding asynchronous data structure access and main process reentry/termination.  Also mentioned are the abilities to allocate alternate stacks (to handle signals when the main stack is full), to receive additional information about signals (such as the PID of the sending process, a signal code, or the exit status of a child process, (depending on the signal) as provided in a siginfo\_t struct), and to interrupt (and optionally restart) blocking system calls (such as the read() call).
+
+\end{document}
