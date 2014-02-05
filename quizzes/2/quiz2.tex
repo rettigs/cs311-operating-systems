@@ -79,21 +79,29 @@ Scatter/gather I/O is a mechanism by which data can be read from or written to a
   parameter take on, and what does each mean?
 
 \begin{quote}
-
+\begin{itemize}
+    \item \texttt{SEEK\_SET}: offset = \texttt{offset}
+    \item \texttt{SEEK\_CUR}: offset = \texttt{offset} + current location
+    \item \texttt{SEEK\_SET}: offset = \texttt{offset} + size of file
+\end{itemize}
 \end{quote}
 
 \item Describe at least 3 ways to time your code. What are the positives and negatives of
   each method?
 
 \begin{quote}
-
+\begin{itemize}
+    \item Using gettimeofday() before and after: requires changing C code, only gives real time.
+    \item Using times(): requires changing C code, only gives user and system time.
+    \item Using the time function to run your program: simple, provides user, system, and real time.
+\end{itemize}
 \end{quote}
 
 \item What system call is used to change the timestamp on a file? What restrictions are
   imposed on you when you use this function?
 
 \begin{quote}
-
+    utimensat(); File permissions impose restrictions on whether the timestamps can be modified.
 \end{quote}
 
 \item Describe the process of installing a signal handler using \texttt{sigaction},
@@ -107,7 +115,7 @@ Scatter/gather I/O is a mechanism by which data can be read from or written to a
   use in setting these actions? Is one way better to use than others?
 
 \begin{quote}
-
+    Default action, ignore, or use signal handler.
 \end{quote}
 
 \item Give the definition of the \texttt{siginfo\_t} struct, and describe each of the
@@ -120,26 +128,26 @@ Scatter/gather I/O is a mechanism by which data can be read from or written to a
 \item How do system calls and signals interact?
 
 \begin{quote}
-
+    System call interrupted by a signal generally fail with an EINTR error code, but can often be manually restarted or set to restart automatically using the \texttt{SA\_RESTART} flag.
 \end{quote}
 
 \item What are \emph{async-signal-safe} functions? Give some examples, and explain why
   they are safe. What are some common functions that aren't safe, and why?
 
 \begin{quote}
-
+    Some async-signal-safe functions include read(), write(), chmod(), fork(), dup(), and stat().  They are async-signal-safe because they either cannot be interrupted or are rerentrant, meaning that they can safely be simultaneously executed by multiple threads of execution in the same process.  Some non-async-signal-safe functions include malloc(), free(), printf(), and scanf().  This is because they are non-reentrant, which is usually caused by using or updating global or static data structures.
 \end{quote}
 
 \item Describe the purpose and usage of the signal mask.
 
 \begin{quote}
-
+    Signal masks are a method of storing 0 or 1 of each type of signal.  They are useful for representing signal sets.
 \end{quote}
 
 \item In what ways can a user send a signal to a process?
 
 \begin{quote}
-
+    With kill().
 \end{quote}
 
 \item Different functions impact the timestamp on a file in different ways. Give some
@@ -153,38 +161,42 @@ Scatter/gather I/O is a mechanism by which data can be read from or written to a
   information can be found there?
 
 \begin{quote}
-
+    The /proc filesystem is a virtual filesystem that provides an interface to internal kernel data strcutures in the form of regular files and directories.  It can be read from or written to like a normal file systems, and can be used to retrieve various information, including that related to networks, filesystems, devices, and processes.
 \end{quote}
 
 \item Explain the idea of locales.
 
 \begin{quote}
-
+    Locales are areas to which a set of display standards apply, such as those for date formats, languages, etc.
 \end{quote}
 
 \item What time did the epoch start, locally?
 
 \begin{quote}
-
+16:00 on Dec 31st, 1969
 \end{quote}
 
 \item Give a call to \texttt{strftime()} that would replicate the output of
   \texttt{asctime()}.
 
 \begin{quote}
-
+    \texttt{strftime(outstr, maxsize, "\%c", tr)}
 \end{quote}
 
 \item What are the different representations of time used by POSIX systems?
 
 \begin{quote}
-
+    struct timeval, time\_t, struct tm, strings
 \end{quote}
 
 \item There are several ways to duplicate a file descriptor. Compare and contrast them.
 
 \begin{quote}
-
+\begin{itemize}
+    \item dup() gives the first unused file descriptor number.
+    \item dup2() gives the requested file descriptor number, closing the old one first if necessary.
+    \item dup3() is mostly the same as dup2(), with the major difference being that the caller can force the flag to be set for the new file descriptor by specifying \texttt{O\_CLOEXEC} in \texttt{flags}.
+\end{itemize}
 \end{quote}
 
 \item \label{last} Describe, in words, the relationship between the per-process file
