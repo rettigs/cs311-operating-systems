@@ -1,0 +1,81 @@
+\documentclass[letterpaper,10pt,fleqn]{article}
+
+%example of setting the fleqn parameter to the article class -- the below sets the offset from flush left (fl)
+\setlength{\mathindent}{1cm}
+
+\usepackage{graphicx}                                        
+
+\usepackage{amssymb}                                         
+\usepackage{amsmath}                                         
+\usepackage{amsthm}                                          
+
+\usepackage{alltt}                                           
+\usepackage{float}
+\usepackage{color}
+
+\usepackage{balance}
+\usepackage[TABBOTCAP, tight]{subfigure}
+\usepackage{enumitem}
+
+\usepackage{pstricks, pst-node}
+
+%the following sets the geometry of the page
+\usepackage{geometry}
+\geometry{textheight=9in, textwidth=6.5in}
+
+% random comment
+
+\newcommand{\cred}[1]{{\color{red}#1}}
+\newcommand{\cblue}[1]{{\color{blue}#1}}
+
+\usepackage{hyperref}
+
+\usepackage{textcomp}
+\usepackage{listings}
+
+\usepackage{wasysym}
+
+\def\name{Sean Rettig}
+
+%% The following metadata will show up in the PDF properties
+\hypersetup{
+  colorlinks = true,
+  urlcolor = black,
+  pdfauthor = {\name},
+  pdfkeywords = {cs311 ``operating systems''},
+  pdftitle = {CS 311 Project},
+  pdfsubject = {CS 311 Project},
+  pdfpagemode = UseNone
+}
+
+\parindent = 0.0 in
+\parskip = 0.2 in
+
+\pagestyle{empty}
+
+\numberwithin{equation}{section}
+
+\newcommand{\D}{\mathrm{d}}
+
+\newcommand\invisiblesection[1]{%
+  \refstepcounter{section}%
+  \addcontentsline{toc}{section}{\protect\numberline{\thesection}#1}%
+  \sectionmark{#1}}
+
+\begin{document}
+
+%to remove page numbers, set the page style to empty
+
+\noindent {\large \bf Name: Sean Rettig \hfill Summary 11}
+
+\noindent {\large \bf ID\#: 931-650-839 }
+
+{\Large CS311 Operating Systems I}
+
+\subsection*{TLPI Chapters 24 and 27}
+
+Chapter 24 describes the concept of process forking (using the fork() system call), which allows a process (called the ``parent'') to effectively duplicate itself by having its stack, data, heap, and text segments copied into another process (the ``child''), after which they can both run in parallel.  Forking is useful because it allows a workload to be divided across multiple processes or be handled by specialized processes (rather than requiring a single process to handle everything).  Once a process is forked, it can either continue execution using the memory copied from its parent, or can call the exec()/execve() system call to load a new program into the text and wipe the old stack, heap, and data.  The parent can also receieve the exit status of a child by calling wait() after the child has called exit().  While forked processes share copies of any file descriptors that were open at the time of the fork, it is important to attempt to synchronize processes (such as by signals) to prevent race conditions and file corruption.
+
+Chapter 27 expands upon the idea of ``execing'' after forking a new process and describes the uses of each of the various functions in the exec() library, such as execle(), execlp(), execvp(), execv(), execl(), and fexecve(), which are all basically convenience functions based on execve() and differ mainly in how they are called.  Also discussed are concepts related to interpreters, scripting, and shells, including how the shell utilizes forked process shared file descriptors to hadle I/O redirection, as well as how to use the system() function to execute a shell command without the need to manually fork(), exec(), wait(), and/or exit().
+
+\end{document}
