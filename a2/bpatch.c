@@ -14,7 +14,7 @@
 #include <dirent.h>
 #include <math.h>
 #include <sys/param.h>
-#include "bdiff.h"
+#include "bpatch.h"
 
 int BUFSIZE = 4096;
 char *name; /* Name of the program */
@@ -64,44 +64,26 @@ void error(char *message)
 /* Patches the given file with the patch info from stdin. */
 int patch(char *file)
 {
-        int fdf = open(file, O_WRONLY);
+        int fd;
+        if((fd = open(file, O_WRONLY)) == -1) error("Could not open file");
 
-        if(fdf == -1) error("Could not open file");
-
-        char bufp[BUFSIZE];
-
-        int status = 0;
-
-        /* Find a contiguous run of bytes to write */
-        /*
         char *line = NULL;
         size_t len = 0;
-        ssize_t readp = 0;
-        int previndex = 0;
-        int curindex = 0;
-        int buffused = 0;
-        while((readp = getline(&line, &len, stdin)) != -1){
-                sscanf(line, " %d %*o %o ", &curindex, &buff[buffused++]);
-                if(previndex != 0 && curindex != previndex + 1) break; // Break when the run ends.
-                previndex = curindex;
-        }
-        */
-        char *line = NULL;
-        size_t len = 0;
-        ssize_t readp = 0;
-        int buffused = 0;
-        while((readp = getline(&line, &len, stdin)) != -1){
+        while(getline(&line, &len, stdin) != -1){
                 int index;
-                char writebuf;
-                sscanf(line, " %d %*o %o ", &index, &writebuf);
-                if(write(fdf, &writebuf, 1) < 1){
-                        status = 2
+                char origbyte;
+                sscanf(line, " %d %o %*o ", &index, &origbyte);
+                if(origbyte == 0){ // The original file was shorter, so truncate the file we're patching.
+                        if(ftruncate(fd, index - 1) == -1) error("Could not truncate file");
                         break;
+                }else{
+                        lseek(fd, index - 1, SEEK_SET);
+                        if(write(fd, &origbyte, 1) < 1) error("Could not write to file");
                 }
         }
 
         free(line);
-        close(fdf);
+        close(fd);
 
-        return status;
+        return EXIT_SUCCESS;
 }
