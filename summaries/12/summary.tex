@@ -1,0 +1,83 @@
+\documentclass[letterpaper,10pt,fleqn]{article}
+
+%example of setting the fleqn parameter to the article class -- the below sets the offset from flush left (fl)
+\setlength{\mathindent}{1cm}
+
+\usepackage{graphicx}                                        
+
+\usepackage{amssymb}                                         
+\usepackage{amsmath}                                         
+\usepackage{amsthm}                                          
+
+\usepackage{alltt}                                           
+\usepackage{float}
+\usepackage{color}
+
+\usepackage{balance}
+\usepackage[TABBOTCAP, tight]{subfigure}
+\usepackage{enumitem}
+
+\usepackage{pstricks, pst-node}
+
+%the following sets the geometry of the page
+\usepackage{geometry}
+\geometry{textheight=9in, textwidth=6.5in}
+
+% random comment
+
+\newcommand{\cred}[1]{{\color{red}#1}}
+\newcommand{\cblue}[1]{{\color{blue}#1}}
+
+\usepackage{hyperref}
+
+\usepackage{textcomp}
+\usepackage{listings}
+
+\usepackage{wasysym}
+
+\def\name{Sean Rettig}
+
+%% The following metadata will show up in the PDF properties
+\hypersetup{
+  colorlinks = true,
+  urlcolor = black,
+  pdfauthor = {\name},
+  pdfkeywords = {cs311 ``operating systems''},
+  pdftitle = {CS 311 Project},
+  pdfsubject = {CS 311 Project},
+  pdfpagemode = UseNone
+}
+
+\parindent = 0.0 in
+\parskip = 0.2 in
+
+\pagestyle{empty}
+
+\numberwithin{equation}{section}
+
+\newcommand{\D}{\mathrm{d}}
+
+\newcommand\invisiblesection[1]{%
+  \refstepcounter{section}%
+  \addcontentsline{toc}{section}{\protect\numberline{\thesection}#1}%
+  \sectionmark{#1}}
+
+\begin{document}
+
+%to remove page numbers, set the page style to empty
+
+\noindent {\large \bf Name: Sean Rettig \hfill Summary 12}
+
+\noindent {\large \bf ID\#: 931-650-839 }
+
+{\Large CS311 Operating Systems I}
+
+\subsection*{TLPI Chapters 25 and 26}
+
+Chapter 25 focuses entirely on process termination.  When a process is terminated, either by a signal or on its own through the \_exit() system call, various cleanup actions are performed, such as closing open file descriptors, removing file/memory locks, and detaching shared memory segments.  Additionally, if a process terminates itself through the exit() library function, some additional cleanup is performed beforehand; \_exit() is only called once all stdio stream buffers have been flushed and all exit handlers have been called.  Exit handlers are additional cleanup functions that can be registered through the atexit() and/or on\_exit() functions, and are called in reverse order of their registration during an exit().  Also briefly mentioned were some issues to consider when using fork(), stdio buffers, and exit()/\_exit(), and how to prevent them by flushing buffers before forking, not writing to the same files at once from multiple processes, and only calling exit() from the parent process (so that children don't flush their buffers, since they would be using \_exit() instead).
+
+Chapter 26 discusses various methods of monitoring child processes, such as by the wait() or waitpid() system calls, which can be used to retrieve the exit statuses of terminated children.  Waitpid() can also be used to notify the parent when a child is stopped or resumed by a signal, can monitor specific children in the case that there are many, and also does not block like wait() does.  The returned wait status from one of these functions can indicate whether the child terminated itself using \_exit() or exit(), was terminated by a signal, or was stopped/resumed by a signal.  Also mentioned is the waitid() system call, which provides various additional options that can be used to specify which processes and events to wait for.  The wait3() and wait4() system calls can also be used to retrieve resource usage information about children.
+
+The reading also dicusses the ideas of orphans (processes whose parents have terminated and are inherited by init) and zombies (child processes that have terminated but have not yet been wait()ed for by their parent), as well additional methods for handling child termination and and zombies, such as by creating a signal handler for the SIGCHLD signal so that you needn't waste CPU time by calling wait()/waitpid().  The SIGCHLD signal can also be explicitly ignored to prevent children from ever becoming zombies at the expense of never being able to reap their statuses.
+
+\end{document}
