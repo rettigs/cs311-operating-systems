@@ -72,26 +72,119 @@
 \subsection*{Design}
 \begin{itemize}
     \item Bdiff will open both files for reading and will read in bytes in chunks of 4096 (for performance reasons), compare them, output the results, and repeat until one of the files ends.
-    \item Bdiff -b will simply print both the octal value and character representation of each byte.
+    \item Bdiff -b will simply print both the octal value and character representation of each byte.  UPDATE: chars had to be passed through a lookup table to print special characters.
     \item Bdiff -i will simply offset where it starts reading each file.
     \item Bdiff -n will simply stop comparing early once it has compared the given number of bytes.
-    \item Bdiff -s will simply not print anything, only return an exit status.  For perforamnce reasons, it will stop comparing once it has found at least one difference.
-    \item Bdiff -r will open the directory streams using the opendir() system call and compare them as normal.
-    \item Bpatch \[-r\] will read the output of bdiff and fill a buffer of 4096 bytes with patch data until it finds a non-sequential run or until the buffer fills up, at which point it will write all changes to the file/directory at once and then start filling another buffer (until all of the bdiff output has been processed).
+    \item Bdiff -s will simply not print anything, only return an exit status.  For performance reasons, it will stop comparing once it has found at least one difference.  UPDATE: early termination was not implemented.
+    \item Bdiff -r will open the directory streams using the opendir() system call and compare them as normal.  UPDATE: the logic for this was a bit more complex than I imagined, but was generally similar.  I ended up creating a function that diffs all files and calls itself on all directories within the directory it is given.
+    \item Bpatch will read the output of bdiff and fill a buffer of 4096 bytes with patch data until it finds a non-sequential run or until the buffer fills up, at which point it will write all changes to the file/directory at once and then start filling another buffer (until all of the bdiff output has been processed). UPDATE: run detection was not implemented; bytes are written one-by-one.  Additionally, recursive patching was not completed.
 \end{itemize}
 
 \subsection*{Work Log}
+\begin{verbatim}
+commit ad1ce8b6c9a494870048339f2b627ce4ac5cfaa8
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 6 07:38:38 2014 +0000
+
+    mostly done with bdiff -r and bpatch -r
+
+commit aa83ee50c35b96e389d2b2486d1fceca10f35f2b
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 6 06:40:41 2014 +0000
+
+    mostly done with bdiff -r
+
+commit 902c77f44a764b0f7a5765670404c833a88035df
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 6 05:42:22 2014 +0000
+
+    bdiff -i now works, and an error message was added
+
+commit 16ef993b00b0a46ceeb0951c5ac86b2efb6b6bf9
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 6 05:24:42 2014 +0000
+
+    bdiff -n works now
+
+commit 62ac9e50084ad54a383fe894597d0a0cfa5fb559
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 6 05:01:53 2014 +0000
+
+    make bdiff -b print special characters properly
+
+commit 68bb3cf03b102058422a8a8189d0be9d10f2c9f9
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 6 04:24:38 2014 +0000
+
+    bpatch now works
+
+commit 6e592c254c4f3c966adffda3ceeadca86b2f992a
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 6 04:14:25 2014 +0000
+
+    remove unnecessary functions from bdiff.c
+
+commit a426e2106cf1fe0104f48c293ff3d10b3500afff
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 6 04:13:19 2014 +0000
+
+    update header files
+
+commit 7fa0e08b571a1410174ee3b16a1d5c77171ab8d0
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 6 03:49:04 2014 +0000
+
+    make bdiff stop printing once it has reached EOF
+
+commit 7bc9f079f9ffeaab432576fdf4bac39e6657724b
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 6 03:48:11 2014 +0000
+
+    remove bdiff binary
+
+commit 693fa52703a4318122db7aea78b2e0ee426a177f
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 6 03:47:31 2014 +0000
+
+    initial version of bpatch.c, requires testing
+
+commit 4293d33a9f8fb932b29b5b86e67853f6bd568284
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 6 03:47:03 2014 +0000
+
+    modify makefile to work with both bdiff and bpatch
+
+commit 13d1f4ea35fa7cc95b0d611bd66ad792c4a6cec5
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Mon Feb 3 00:36:46 2014 +0000
+
+    bdiff -s works
+
+commit 20ed7c637aa52f626694bfdd44a81c33f266fbd9
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Mon Feb 3 00:01:03 2014 +0000
+
+    bdiff and bdiff -b are now working properly
+
+commit 30f61e60599e1d8b2c946eba46dd8666447cfbfe
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Sun Feb 2 17:09:47 2014 +0000
+
+    initial commit of bdiff, basic functionality should be done but still requires testing
+\end{verbatim}
 
 \subsection*{Challenges Overcame}
 \begin{itemize}
-    \item Does bdiff need to accept human-readable numbers for -n?
-    \item Does bpatch need to accept the output of bdiff -b?
+    \item Figuring out how to use opendir(), readdir(), and getline() was a little tricky at first, but I figured it out.
+    \item Learning how to properly format sscanf() and snprintf() strings was confusing, but I got it after much trial and error.
+    \item Learning how to recurse directories was difficult, but using a recursive function made it easier to deal with.
 \end{itemize}
 
 \subsection*{Questions}
 \begin{enumerate}
     \item The main point of the assignment was to learn the basics of performing file I/O in C using the Linux programming interface.
-    \item 
+    \item I tested all functions of bdiff with different files in different situations, including those where one file was bigger than the other and where multiple changes were made.  I tested bpatch in a similar way and achieved successful results, but was not able to get bpatch -r working properly; this was tested using several files in nested directories.
+    \item I learned how to use opendir(), readdir(), sscanf(), snprintf(), and getline().
 \end{enumerate}
 
 \end{document}
