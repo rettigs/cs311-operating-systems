@@ -72,30 +72,6 @@ void error(char *message)
         exit(2);
 }
 
-/* Removes '/'s from the given char array */
-char * rslash(char name[], int len)
-{
-        for (int i = 0; i < len; i++) {
-                if (name[i] == '/') name[i] = '\0';
-        }
-        return name;
-}
-
-/* Converts a char array to a string by replacing whitespace at the end with null terminators */
-char * cats(char array[], int len)
-{
-        char * string[len];
-        for (int i = len - 1; i >= 0; i--) {
-printf("array[%d]: %c\n", i, array[i]);
-                if (array[i] = ' ') {
-                        string[i] = '\0';
-                } else {
-                        string[i] = array[i];
-                }
-        }
-        return string;
-}
-
 /* Diff two files. Returns 0 if same, 1 if different, 2 if error. */
 int diff(char *file1, char *file2)
 {
