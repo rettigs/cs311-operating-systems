@@ -78,15 +78,6 @@ void error(char *message)
 /* Calls diff() recursively on the given directories. */
 int rdiff(char *file1, char *file2)
 {
-        //open first dir
-        //for each entry in the dir
-                //if folder, call rdiff()
-                //if file, print filepath and call diff()
-        //open second dir
-        //for each entry in the dir
-                //if folder, call rdiff()
-                //if file and hasn't already been diffed, print filepath and call diff() (this step is needed to catch files that are in the second dir but not the first; we need to delete them.
-
         FILE * dir1;
         if((dir1 = opendir(file1)) == NULL) error("Could not open directory");
         struct dirent *entry;
@@ -109,10 +100,14 @@ int rdiff(char *file1, char *file2)
                         if(S_ISDIR(statbuf.st_mode)){
                                 rdiff(path1, path2);
                         }else{
-                                diff(path1, path2);
+                                printf("%s\n", path2);
+                                if(diff(path1, path2) == 0){
+                                        printf(" -1 -1 -1 \n");
+                                }
                         }
                 }
         }
+        return 1;
 }
 
 /* Diff two files. Returns 0 if same, 1 if different, 2 if error. */
@@ -121,7 +116,11 @@ int diff(char *file1, char *file2)
         int fd1 = open(file1, O_RDONLY);
         int fd2 = open(file2, O_RDONLY);
 
-        if(fd1 == -1 || fd2 == -1) error("Could not open file");
+        if(fd1 == -1) error("Could not open file");
+        if(fd2 == -1){
+                printf(" 0 0 0 \n");
+                return EXIT_SUCCESS;
+        }
 
         char buf1[BUFSIZE];
         char buf2[BUFSIZE];
@@ -168,7 +167,7 @@ int diff(char *file1, char *file2)
                 read2 = read(fd2, buf2, BUFSIZE);
 
                 if (read1 > 0 && read2 > 0){
-                        for(int i = 0; i <= MIN(read1, read2); i++){
+                        for(int i = 0; i <= MAX(read1, read2); i++){
                                 byteindex++;
                                 if(buf1[i] != buf2[i]){
                                         status = 1;

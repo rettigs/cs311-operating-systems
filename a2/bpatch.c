@@ -68,15 +68,20 @@ void error(char *message)
 /* Calls patch() recursively on the given directory. */
 int rpatch(char *file)
 {
-        //open dir
-        //call patch() on each filepath
+        char *line = NULL;
+        size_t len = 0;
+        while(getline(&line, &len, stdin) != -1){
+                patch(line);
+        }
 }
 
 /* Patches the given file with the patch info from stdin. */
 int patch(char *file)
 {
+        printf("Patching %s\n", file);
+
         int fd;
-        if((fd = open(file, O_WRONLY)) == -1) error("Could not open file");
+        if((fd = open(file, O_WRONLY | O_CREAT, 0660)) == -1) error(file);
 
         char *line = NULL;
         size_t len = 0;
@@ -84,8 +89,12 @@ int patch(char *file)
                 int index;
                 char origbyte;
                 sscanf(line, " %d %o %*o ", &index, &origbyte);
+                if(index == -1) break; // NOOP
                 if(origbyte == 0){ // The original file was shorter, so truncate the file we're patching.
                         if(ftruncate(fd, index - 1) == -1) error("Could not truncate file");
+                        struct stat statbuf;
+                        if(fstat(fd, &statbuf) == -1) error("Could not stat file");
+                        if(statbuf.st_size == 0 && unlink(file) == -1) error("Could not delete file");
                         break;
                 }else{
                         lseek(fd, index - 1, SEEK_SET);
