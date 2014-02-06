@@ -123,12 +123,14 @@ int diff(char *file1, char *file2)
                 read2 = read(fd2, buf2, BUFSIZE);
 
                 if (read1 > 0 && read2 > 0){
-                        for(int i = 0; i < MAX(read1, read2); i++){
+                        for(int i = 0; i <= MIN(read1, read2); i++){
                                 byteindex++;
                                 if(buf1[i] != buf2[i]){
                                         status = 1;
-                                        if(verbose) printf("%*d %o %c    %o %c\n", pad, byteindex, buf1[i], buf1[i], buf2[i], buf2[i]);
-                                        else printf("%*d %o %o\n", pad, byteindex, buf1[i], buf2[i]);
+                                        if(!quiet){
+                                                if(verbose) printf("%*d %o %c    %o %c\n", pad, byteindex, buf1[i], buf1[i], buf2[i], buf2[i]);
+                                                else printf("%*d %3o %3o\n", pad, byteindex, buf1[i], buf2[i]);
+                                        }
                                 }
                         }
                 }else{
