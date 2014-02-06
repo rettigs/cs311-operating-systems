@@ -53,7 +53,11 @@ int main(int argc, char *argv[])
         char **argv2 = &argv[optind];
 
         /* Diff the files. */
-        exit(diff(argv2[0], argv2[1]));
+        int status;
+        if(recursive) status = rdiff(argv2[0], argv2[1]);
+        else status = diff(argv2[0], argv2[1]);
+
+        exit(status);
 }
 
 /* Print usage info and exit */
@@ -69,6 +73,46 @@ void error(char *message)
 {
         perror(message);
         exit(2);
+}
+
+/* Calls diff() recursively on the given directories. */
+int rdiff(char *file1, char *file2)
+{
+        //open first dir
+        //for each entry in the dir
+                //if folder, call rdiff()
+                //if file, print filepath and call diff()
+        //open second dir
+        //for each entry in the dir
+                //if folder, call rdiff()
+                //if file and hasn't already been diffed, print filepath and call diff() (this step is needed to catch files that are in the second dir but not the first; we need to delete them.
+
+        FILE * dir1;
+        if((dir1 = opendir(file1)) == NULL) error("Could not open directory");
+        struct dirent *entry;
+        while((entry = readdir(dir1)) != NULL){
+                char *name = &entry->d_name;
+                if(strcmp(name, ".") != 0 && strcmp(name, "..") != 0){
+                        char path1[512];
+                        strcpy(path1, file1);
+                        strcat(path1, "/");
+                        strcat(path1, name);
+
+                        char path2[512];
+                        strcpy(path2, file2);
+                        strcat(path2, "/");
+                        strcat(path2, name);
+
+                        struct stat statbuf;
+                        if(stat(path1, &statbuf) == -1) error(path1);
+
+                        if(S_ISDIR(statbuf.st_mode)){
+                                rdiff(path1, path2);
+                        }else{
+                                diff(path1, path2);
+                        }
+                }
+        }
 }
 
 /* Diff two files. Returns 0 if same, 1 if different, 2 if error. */

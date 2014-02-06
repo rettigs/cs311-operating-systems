@@ -43,7 +43,11 @@ int main(int argc, char *argv[])
         char **argv2 = &argv[optind];
 
         /* Patch the files. */
-        exit(patch(argv2[0]));
+        int status;
+        if(recursive) status = rpatch(argv2[0]);
+        else status = patch(argv2[0]);
+
+        exit(status);
 }
 
 /* Print usage info and exit */
@@ -59,6 +63,13 @@ void error(char *message)
 {
         perror(message);
         exit(2);
+}
+
+/* Calls patch() recursively on the given directory. */
+int rpatch(char *file)
+{
+        //open dir
+        //call patch() on each filepath
 }
 
 /* Patches the given file with the patch info from stdin. */
