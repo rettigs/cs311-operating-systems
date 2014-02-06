@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
         /* Parse the flags */
         verbose = offset1 = offset2 = limit = quiet = recursive = 0;
         int opt;
-        while ((opt = getopt(argc, argv, "binsr")) != -1) {
+        while ((opt = getopt(argc, argv, "bi:n:sr")) != -1) {
                 switch (opt) {
                         case 'b':
                                 verbose = 1;
@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
                                 offset2 = 0; //TODO
                                 break;
                         case 'n':
-                                limit = 0; //TODO
+                                limit = atoi(optarg);
                                 break;
                         case 's':
                                 quiet = 1;
@@ -110,12 +110,14 @@ int diff(char *file1, char *file2)
         "M-o", "M-p", "M-q", "M-r", "M-s", "M-t", "M-u", "M-v", "M-w", "M-x", "M-y", "M-z", "M-{", 
         "M-|", "M-}", "M-~", "M-^?" };
 
+        int compared = 0;
         int read1 = 0;
         int read2 = 0;
         int byteindex = 0;
         int status = 0;
 
-        for(;;){
+        int done = 0;
+        while(!done){
                 read1 = read(fd1, buf1, BUFSIZE);
                 read2 = read(fd2, buf2, BUFSIZE);
 
@@ -128,6 +130,10 @@ int diff(char *file1, char *file2)
                                                 if(verbose) printf("%*d %3o %-4s %3o %s\n", pad, byteindex, buf1[i], chars[buf1[i]], buf2[i], chars[buf2[i]]);
                                                 else printf("%*d %3o %3o\n", pad, byteindex, buf1[i], buf2[i]);
                                         }
+                                }
+                                if(++compared >= limit && limit > 0){
+                                        done = 1;
+                                        break;
                                 }
                         }
                 }else{
