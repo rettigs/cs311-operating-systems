@@ -32,8 +32,7 @@ int main(int argc, char *argv[])
                                 verbose = 1;
                                 break;
                         case 'i':
-                                offset1 = 0; //TODO
-                                offset2 = 0; //TODO
+                                sscanf(optarg, "%d:%d", &offset1, &offset2);
                                 break;
                         case 'n':
                                 limit = atoi(optarg);
@@ -116,6 +115,9 @@ int diff(char *file1, char *file2)
         int byteindex = 0;
         int status = 0;
 
+        lseek(fd1, offset1, SEEK_SET);
+        lseek(fd2, offset2, SEEK_SET);
+
         int done = 0;
         while(!done){
                 read1 = read(fd1, buf1, BUFSIZE);
@@ -137,7 +139,7 @@ int diff(char *file1, char *file2)
                                 }
                         }
                 }else{
-                        if(read1 == -1 || read2 == -1) status = 2;
+                        if(read1 == -1 || read2 == -1) error("Could not read file");
                         break;
                 }
         }
