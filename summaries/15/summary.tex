@@ -1,0 +1,81 @@
+\documentclass[letterpaper,10pt,fleqn]{article}
+
+%example of setting the fleqn parameter to the article class -- the below sets the offset from flush left (fl)
+\setlength{\mathindent}{1cm}
+
+\usepackage{graphicx}                                        
+
+\usepackage{amssymb}                                         
+\usepackage{amsmath}                                         
+\usepackage{amsthm}                                          
+
+\usepackage{alltt}                                           
+\usepackage{float}
+\usepackage{color}
+
+\usepackage{balance}
+\usepackage[TABBOTCAP, tight]{subfigure}
+\usepackage{enumitem}
+
+\usepackage{pstricks, pst-node}
+
+%the following sets the geometry of the page
+\usepackage{geometry}
+\geometry{textheight=9in, textwidth=6.5in}
+
+% random comment
+
+\newcommand{\cred}[1]{{\color{red}#1}}
+\newcommand{\cblue}[1]{{\color{blue}#1}}
+
+\usepackage{hyperref}
+
+\usepackage{textcomp}
+\usepackage{listings}
+
+\usepackage{wasysym}
+
+\def\name{Sean Rettig}
+
+%% The following metadata will show up in the PDF properties
+\hypersetup{
+  colorlinks = true,
+  urlcolor = black,
+  pdfauthor = {\name},
+  pdfkeywords = {cs311 ``operating systems''},
+  pdftitle = {CS 311 Project},
+  pdfsubject = {CS 311 Project},
+  pdfpagemode = UseNone
+}
+
+\parindent = 0.0 in
+\parskip = 0.2 in
+
+\pagestyle{empty}
+
+\numberwithin{equation}{section}
+
+\newcommand{\D}{\mathrm{d}}
+
+\newcommand\invisiblesection[1]{%
+  \refstepcounter{section}%
+  \addcontentsline{toc}{section}{\protect\numberline{\thesection}#1}%
+  \sectionmark{#1}}
+
+\begin{document}
+
+%to remove page numbers, set the page style to empty
+
+\noindent {\large \bf Name: Sean Rettig \hfill Summary 15}
+
+\noindent {\large \bf ID\#: 931-650-839 }
+
+{\Large CS311 Operating Systems I}
+
+\subsection*{TLPI Chapter 44}
+
+Chapter 44 mainly focuses on pipes, which are a method of interprocess data transfer that can be used in a manner similar to regular files.  Each pipe is a byte stream with a read end and a write end.  Data can only travel in one direction and cannot be randomly accessed; bytes are read in the order they are written, and lseek() cannot be used.  Reading from a pipe will block until there is at least one byte to be read, and writing to a pipe should be done in increments of PIPE\_BUF bytes (4096 on Linux) to guarantee that the write will be performed atomically (which is important if multiple processes are writing to the same pipe, as it prevents them from writing at the same time and causing data corruption/interleaving).  Writes will block until there is room in the pipe; pipes can store a maximum of 65536 bytes in Linux.  Pipes can be created with the pipe() system call and are often followed by a fork() since pipes have limited utility for single processes.  Because both processes have copies of the read and write file descriptors of the pipe, the writing process must then close() their read end and the reading process must close() their write end, after which the pipe can be used as described earlier.  Also described are how to use pipes for process synchronization, how to connect filters (programs that read from stdin and write to stdout) together using pipes and the dup2() call, how to automatically run shell commands with an input or output pipe using popen() (and pclose()), and how to manually flush pipes using fflush().
+
+Chapter 44 also mentions FIFOs, or named pipes.  They operate in a manner similar to pipes, only they are opened just like a regular file, allowing unrelated processes to communicate through them.  FIFOs can be created with the mkfifo command or the mkfifo() function and are then subject to normal file permissions with regards to reading and writing.  Opening a FIFO in read-only mode blocks until another process has opened it in write-only mode, and vice versa, unless the O\_NONBLOCK flag is specified.  However, this also disables blocking for subsequents read()s and/or write()s, so it may be desirable to enable blocking again through fcntl().
+
+\end{document}
