@@ -1,0 +1,79 @@
+\documentclass[letterpaper,10pt,fleqn]{article}
+
+%example of setting the fleqn parameter to the article class -- the below sets the offset from flush left (fl)
+\setlength{\mathindent}{1cm}
+
+\usepackage{graphicx}                                        
+
+\usepackage{amssymb}                                         
+\usepackage{amsmath}                                         
+\usepackage{amsthm}                                          
+
+\usepackage{alltt}                                           
+\usepackage{float}
+\usepackage{color}
+
+\usepackage{balance}
+\usepackage[TABBOTCAP, tight]{subfigure}
+\usepackage{enumitem}
+
+\usepackage{pstricks, pst-node}
+
+%the following sets the geometry of the page
+\usepackage{geometry}
+\geometry{textheight=9in, textwidth=6.5in}
+
+% random comment
+
+\newcommand{\cred}[1]{{\color{red}#1}}
+\newcommand{\cblue}[1]{{\color{blue}#1}}
+
+\usepackage{hyperref}
+
+\usepackage{textcomp}
+\usepackage{listings}
+
+\usepackage{wasysym}
+
+\def\name{Sean Rettig}
+
+%% The following metadata will show up in the PDF properties
+\hypersetup{
+  colorlinks = true,
+  urlcolor = black,
+  pdfauthor = {\name},
+  pdfkeywords = {cs311 ``operating systems''},
+  pdftitle = {CS 311 Project},
+  pdfsubject = {CS 311 Project},
+  pdfpagemode = UseNone
+}
+
+\parindent = 0.0 in
+\parskip = 0.2 in
+
+\pagestyle{empty}
+
+\numberwithin{equation}{section}
+
+\newcommand{\D}{\mathrm{d}}
+
+\newcommand\invisiblesection[1]{%
+  \refstepcounter{section}%
+  \addcontentsline{toc}{section}{\protect\numberline{\thesection}#1}%
+  \sectionmark{#1}}
+
+\begin{document}
+
+%to remove page numbers, set the page style to empty
+
+\noindent {\large \bf Name: Sean Rettig \hfill Summary 17}
+
+\noindent {\large \bf ID\#: 931-650-839 }
+
+{\Large CS311 Operating Systems I}
+
+\subsection*{TLPI Chapter 30}
+
+Chapter 30 focuses on mutexes and condition variables as methods of process synchronization.  Mutexes (mutual exclusions) are a type of variable that represents either a locked state or an unlocked state, indicating whether another process is using a particular shared resource.  They are locked with the pthread\_mutex\_lock() function (which blocks if it's already locked) and unlocked with the pthread\_mutex\_unlock() function (which errors if it's already unlocked or called by a process that didn't lock it originally).  Mutexes can also be locked with the pthread\_mutex\_trylock() function (which doesn't block, but returns an error if the lock is unavailable) and the pthread\_mutex\_timedlock() function (which blocks for the given amount of time before returning an error if the lock is unavailable).  Also described are mutex performance considerations, methods to avoid deadlocks due to mutex usage (such as always locking in a certain order, or releasing all locks if a process can't acquire every lock it needs), the differences between statically and dynamically allocating mutexes, and the concept of mutex attributes (which can be used to set a mutex type, for example, which changes the behavior of the mutex).  Chapter 30 also describes the concept of condition variables, which are used in conjunction with mutexes and can be used to signal (with the pthread\_cond\_signal() and pthread\_cond\_broadcast() functions) to other processes (which listen for signals with the pthread\_cond\_wait() function) when a shared variable has been changed.
+
+\end{document}
