@@ -1,0 +1,236 @@
+\documentclass[letterpaper,10pt,onecolumn,titlepage]{article}
+
+\usepackage{graphicx}                                        
+\usepackage{amssymb}                                         
+\usepackage{amsmath}                                         
+\usepackage{amsthm}                                          
+
+\usepackage{alltt}                                           
+\usepackage{float}
+\usepackage{color}
+\usepackage{url}
+
+\usepackage{balance}
+\usepackage[TABBOTCAP, tight]{subfigure}
+\usepackage{enumitem}
+\usepackage{pstricks, pst-node, pst-tree}
+
+
+\usepackage{geometry}
+\geometry{textheight=9.5in, textwidth=7in, bmargin=1in}
+
+% random comment
+
+\newcommand{\cred}[1]{{\color{red}#1}}
+\newcommand{\cblue}[1]{{\color{blue}#1}}
+
+\usepackage{hyperref}
+\usepackage{geometry}
+
+\def\name{D. Kevin McGrath}
+
+\parindent = 0.0 in
+\parskip = 0.1 in
+
+%% The following metadata will show up in the PDF properties
+\hypersetup{
+  colorlinks = true,
+  urlcolor = black,
+  pdfauthor = {\name},
+  pdfkeywords = {cs411 ``operating systems'' files filesystem I/O},
+  pdftitle = {CS 411 Final},
+  pdfsubject = {CS 411 Final},
+  pdfpagemode = UseNone
+}
+
+\pagestyle{empty}
+\begin{document}
+
+\noindent {\large \bf Name: Sean Rettig \hfill Quiz 3}
+
+\noindent {\large \bf ID\#: 931-650-839 }
+
+{\Large CS311 Operating Systems I}
+
+\emph{Please use this \LaTeX\ file as a template, and answer the following questions.
+  Please be detailed in your answers.}
+
+\emph{There are \ref{last} questions on this quiz. Please answer all of them clearly.
+  Points are awarded for more complete answers. Brevity buys you nothing.}
+
+\emph{You will be turning in the complete version of this file, plus a makefile to build
+  it. Please ensure you fill out the name and ID fields above, as well.}
+
+\begin{enumerate}%[itemsep=0.1 in]
+\item What is the name of your TA?
+\begin{quote}
+Devlin Junker
+\end{quote}
+
+\item The \texttt{exec*} family of system calls and library functions have a series of suffixes. What are they, and what does each mean?
+\begin{quote}
+\begin{itemize}
+\item execve() takes a pathname to a program, an array of arguments, and an environment.
+\item execle() takes a pathname to a program, a list of arguments, and an environment.
+\item execlp() takes a filename for a program and uses PATH to find it, takes a list of arguments, and uses the caller's environment.
+\item execvp() takes a filename for a program and uses PATH to find it, takes an array of arguments, and uses the caller's environment.
+\item execv() takes a pathname to a program, takes an array of arguments, and uses the caller's environment.
+\item execl() takes a pathname to a program, takes a list of arguments, and uses the caller's environment.
+\end{itemize}
+\end{quote}
+
+\item Describe the semantics of wait and waitpid.
+\begin{quote}
+Each will return the status of a terminated child process and reap it so that it stops being a zombie.  wait() will return the status of an arbitrary terminated child process (if there are multiple), while waitpid() returns the status of a particular child.  wait() blocks until a child process terminates, while waitpid() will return immediately if the given process has not terminated.  wait() will only return if a child is terminated, while waitpid() will also return if a child is stopped or continued through a signal.
+\end{quote}
+
+\item Describe the memory semantics of fork.
+\begin{quote}
+The text segment of any process is read-only, so it does not need to be copied to the child process; both processes can use the same one.  The data, heap, and stack segments are copied on write, meaning that they both use the same memory until one of the processes tries to change it, at which point the child gets its own copy so that the write doesn't affect both processes.  This is employed so that no time is wasted copying segments in the event that the child process just execs immediately, discarding the memory that would have just been copied.
+\end{quote}
+
+\item Explain what is and isn't shared between parent and child.
+\begin{quote}
+The text segment is shared because it is read-only, while the data, heap, and stack segments are only shared until one of them writes, at which point the child receives its own copy.  Any open file descriptors are duplicated, with both processes sharing their attributes and file offsets.  Nothing else is shared.
+\end{quote}
+
+\item There are many reasons you shouldn't rely on specific ordering of parent and children processes. Explain at least two of them.
+\begin{quote}
+\begin{itemize}
+\item The processes may be run in any order, depending on how the processor schedules them.
+\item The processes may run at the same time if there are multiple processors.
+\end{itemize}
+\end{quote}
+
+\item Write a simple program that forks off three children. These children should do nothing until receiving SIGUSR1 from their parent (and ONLY their parent), and then self-terminate. Their parent should wait on all them, in the specific order of child 2, child 1, child 3. The parent should then terminate cleanly.
+\begin{quote}
+\begin{verbatim}
+#define _GNU_SOURCE
+#include <signal.h>
+
+static void sigHandler(int sig){
+    _exit();
+}
+
+int main(int argc, char **argv)
+{
+    int child[3];
+
+    for(int i = 0; i < 2; i++){
+        int pid;
+        switch(pid = fork()){
+            case -1: //error
+                perror("Could not fork");
+                exit(1);
+            case 0: //child
+                signal(SIGUSR1, sigHandler);
+                break;
+            default: //parent
+                child[i] = pid;
+                if(i == 2){
+                    for(int j = 0; j < 2; j++){
+                        kill(child[j], SIGUSR1);
+                    }
+
+                    int status;
+                    waitpid(child[1], &status, 0);
+                    waitpid(child[0], &status, 0);
+                    waitpid(child[2], &status, 0);
+
+                    exit(1);
+                }
+        }
+    }
+}
+\end{verbatim}
+\end{quote}
+
+\item Explain the differences between \texttt{exit()} and \texttt{\_exit()}. What do they have in common?
+\begin{quote}
+exit() is a wrapper function for \_exit(), calling any registered exit handlers and flushing the stdio stream buffers before calling \_exit(), which handles all cleanup actions from then on and terminates the process.  Additionally, \_exit() is a system call and is UNIX-specific, while exit() is a function in the standard C library.
+\end{quote}
+
+\item There are certain actions that occur when a process terminates, either normally or abnormally. What are they?
+\begin{quote}
+\begin{itemize}
+\item Open file descriptors, directory streams, message catalog descriptors, and conversions descriptors are closed.
+\item Any file locks are released.
+\item Any attached System V shared memory segments are detached, and their corresponding shm\_nattch counters are decremented by one.
+\item The semadj value is added to the semaphore value of every System V semaphore whose semadj value was set by the process.
+\item If the terminating process is the controlling process for a controlling terminal, the SIGHUP signal is sent to each process in the controlling terminal's foreground process group, and the terminal is disassociated from the session.
+\item Any open POSIX named semaphores are closed.
+\item Any open POSIX message queues are closed.
+\item If a process group becomes orphaned and there are any stopped processes in that group, all processes in that group are sent the SIGHUP signal followed by the SIGCONT signal.
+\item Any memory locks established through mlock() or mlockall() are removed.
+\item Any memory mappings established through mmap() are removed.
+\end{itemize}
+\end{quote}
+
+\item How do you determine if a process exited normally or abnormally? What else can you determine from this same source?
+\begin{quote}
+You can determine how a process exited by calling wait() (or similar) on it and reading its returned status value, from which you can also determine its exit status and terminating/stopping/continuing signal.
+\end{quote}
+
+\item According to Ripley, what was the only way to be sure?
+\begin{quote}
+Nuke it from orbit.
+\end{quote}
+
+\item How do \texttt{fork} and stdio buffering interact with the different methods of process termination?
+\begin{quote}
+Since the stdio buffers are maintained by the process's userspace memory, fork() duplicates them, and as each process calls exit(), each buffer is flushed, causing duplicate output.  This can be mitigated by calling fflush() prior to forking, or by calling exit() from the parent only and \_exit() from the children so that the buffers are only flushed once.
+\end{quote}
+
+\item There are several different ways of dealing with zombies. What are they?
+\begin{quote}
+\begin{itemize}
+\item The parent can wait() for them.
+\item The parent can be terminated, at which point init will adopt them and wait() for them.
+\item The parent can explicitly ignore the SIGCHLD signal to prevent them from being created in the first place.
+\end{itemize}
+\end{quote}
+
+\item What happens to an orphan?
+\begin{quote}
+It is adopted by the init process, i.e. its parent pid is set to 1.
+\end{quote}
+
+\item Describe the interaction of file descriptors and signal handlers with \texttt{exec*}.
+\begin{quote}
+Unless the close-on-exec flag is set, all file descriptors will remain open in a process after execing.  Signal handlers, however, are not kept.
+\end{quote}
+
+\item How do threads differ from processes?
+\begin{quote}
+All threads within a process share the same global memory, including the text, data, and heap (but have different stacks).  Threads also share pid, ppid, controlling terminal, process credentials, open file descriptors, record locks created using fcntl(), signal dispositions, umask, current working directory, root directory, interval and POSIX timers, System V semaphore undo values, resource limits, CPU time consumed, resources consumed, and nice value.  Threads can communicate much more easily than processes can, and are also faster to create.
+\end{quote}
+
+\item How are threads spawned? How are they waited on? Can they become zombies?
+\begin{quote}
+Using the Pthreads API, threads can be spawned using the pthread\_create() function and can be waited on with the pthread\_join() function.  Undetached threads will become the thread equivalent of a zombie process if they are not joined.
+\end{quote}
+
+\item Describe the semantics of \texttt{popen}.
+\begin{quote}
+The popen() function creates a pipe and forks a child process that execs a shell to runs the given command, which will then either read from or write to the pipe, depending on whether the mode was specified to be "r" or "w".  popen() returns a file stream pointer on success and NULL on error.  Once I/O is complete, pclose() should be called to close the pipe and wait for the child shell to terminate.
+\end{quote}
+
+\item FIFOs are sometimes called named pipes. How do they differ from pipes created via \texttt{pipe()}? Are there any special considerations when using them?
+\begin{quote}
+FIFOs function similarly to pipes, but are opened like a regular file, allowing unrelated processes to communicate through them.  They are subject to normal file permissions with regards to reading and writing.  Like pipes, FIFOs generally have a read end and a write end; opening a FIFO in O\_RDONLY mode blocks until another process has opened it in O\_WRONLY mode, and vice versa.  While it is possible to open a FIFO with the O\_RDWR flag, this should generally be avoided in favor of the O\_NONBLOCK flag should one need to open a FIFO without blocking.
+\end{quote}
+
+\item \label{last} Describe the semantics of \texttt{read()} and \texttt{write()} on pipes.
+\begin{quote}
+For writing n bytes, a write() will be performed atomically if n <= PIPE\_BUF.  If n > PIPE\_BUF, a write() is not atomic and will be written in chunks less than or equal to PIPE\_BUF, with the chunks potentially interleaved with writes from other processes.  If there is not enough room in the pipe, write() will block until there is.  If the O\_NONBLOCK flag is set, write() will not block, but if there is not enough room, atomic writes will fail with error EAGAIN and non-atomic writes will write partially, only erroring if there is less than 1 byte of room.  In the event that the read end of the pipe is closed, write() will always fail with SIGPIPE and EPIPE.
+
+For reading n bytes from a pipe containing p bytes, read() will read as many bytes as possible up to n, as long as p != 0.  If p = 0 and the write end is closed, read returns 0 (EOF).  If the write end is open, read() will block until there are bytes available to read, or simply fail with error EAGAIN if O\_NONBLOCK is set.
+\end{quote}
+
+\end{enumerate}
+
+% \clearpage\null
+
+\end{document}
+
+
