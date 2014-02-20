@@ -4,24 +4,15 @@ default: pdf c
 
 CC = gcc
 CFLAGS = -Wall -std=c99 -openmp -O3 -g -I.
-#overkill on the flags, but that doesn't hurt anything
 LDFLAGS = -lrt -lpthread -lm
-#replace this if you want to change the output name
-TARGET = uniqify
 
-#any headers go here
-INCLUDES = uniqify.h
+TARGET1 = bdiff
+TARGET2 = bpatch
 
-#any .c or .cpp files go here
-SOURCE = uniqify.c
+c:
+	${CC} ${CFLAGS} ${TARGET1}.c -o ${TARGET1} ${LDFLAGS}
+	${CC} ${CFLAGS} ${TARGET2}.c -o ${TARGET2} ${LDFLAGS}
 
-#depends on all of you source and header files
-c: ${SOURCE} ${INCLUDES}
-#this assumes you actually are linking all of the source files together
-	${CC} ${CFLAGS} ${SOURCE} -o ${TARGET} ${LDFLAGS}
-
-#	debug: ${SOURCE} ${INCLUDES}
-#		${CC} ${CFLAGS} ${SOURCE} -o ${TARGET} ${LDFLAGS} -DDEBUG
 
 # Makes LaTeX into a PDF
 
