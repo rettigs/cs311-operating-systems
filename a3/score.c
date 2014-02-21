@@ -1,7 +1,6 @@
 #define _BSD_SOURCE
 
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <stdio.h>
@@ -9,10 +8,9 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <string.h>
-#include <dirent.h>
 #include "score.h"
 
-#define FP_SPECIAL 1
+#define MAX_WORD_LENGTH 4096
 
 char *name; // Name of program
 int DEBUG = 0; // Whether we are in debug mode
@@ -91,8 +89,39 @@ void reader(int threads, int (*rtospipe)[2], int filec, char **filev)
 {
     debug("Reader spawned");
 
-    for(int i = 0; i < filec; i++){
-        
+    /* Set up pipes/streams */
+    FILE *rtosstreamw[threads];
+    for(int i = 0; i < threads; i++){
+        close(rtospipe[i][0]); // Close pipe read end
+        rtosstreamw[i] = fdopen(rtospipe[1], "w") // Open stream for pipe write end
+    }
+
+    /* Read the files, parse the words, and send them to the scorer processes */
+    int robin = 0;
+    for(int i = 0; i < filec; i++){ // For every file...
+        if((filefd = int filefd = open(filev[i], O_RDONLY)) == -1) error("Could not open input file");
+        if((FILE *filestream = fdopen(filefd, "r")) == NULL) error("Could not open input file stream");
+        debug("Opened file");
+
+        /* Find words in the file by reading each char and storing it in a word buffer until we hit a non-letter, non-hyphen, non-apostrophe character */
+        char word[MAX_WORD_LENGTH];
+        int wordlen = 0;
+        char c;
+        while((c = fgetc(filestream)) != EOF){
+            if(c == '\'' || c == '-' || isalpha(c)){ // If the char is a letter, apostrophe, or hyphen, add it to the word buffer
+                word[wordlen] = tolower(c);
+                wordlen++;
+            }else{ // Otherwise, the word is over, so terminate it and hand it off
+                word[wordlen] = '\0';
+                wordlen = 0;
+                fputs(word, rtosstreamw[robin++ % threads]); // Hand the word to one of the scorer processes, round-robin style
+            }
+        }
+    }
+
+    /* Close streams */
+    for(int i = 0; i < threads; i++){
+        fclose(rtosstreamw[i]);
     }
 }
 
