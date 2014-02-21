@@ -13,8 +13,15 @@
 #include <string.h>
 #include <ctype.h>
 #include "score.h"
+#include "uthash.h"
 
-#define MAX_WORD_LENGTH 4096
+#define MAX_WORD_SIZE 64
+
+struct wordnode{
+    char word[MAX_WORD_SIZE];
+    int count;
+    UT_hash_handle hh;
+};
 
 char *name; // Name of program
 int DEBUG = 0; // Whether we are in debug mode
@@ -44,7 +51,10 @@ int main(int argc, char *argv[])
                 usage();
         }
     }
-    if(threads < 1) error("Must specify at least 1 scorer thread\n");
+    if(threads < 1){
+        printf("Must specify at least 1 scorer thread\n");
+        exit(EXIT_FAILURE);
+    }
 
     /* Strip the flags from the arguments */
     int argc2 = argc - optind;
@@ -117,12 +127,14 @@ void reader(int threads, int *rtospipe, int filec, char **filev)
         if(DEBUG) printf("[Reader] Opened file %s\n", filev[i]);
 
         /* Find words in the file by reading each char and storing it in a word buffer until we hit a non-letter, non-hyphen, non-apostrophe character */
-        char word[MAX_WORD_LENGTH];
+        char word[MAX_WORD_SIZE];
         int wordlen = 0;
         char c;
         int isword = 0;
-        while((c = fgetc(filestream)) != EOF){
-            if(c == '\'' || c == '-' || isalpha(c)){ // If the char is a letter, apostrophe, or hyphen, add it to the word buffer
+        while((c = fgetc(filestream))){
+            if(DEBUG > 1) printf("[Reader] Got char: %c (%d)\n", c, c);
+            if(c == EOF) break;
+            else if(c == '\'' || c == '-' || isalpha(c)){ // If the char is a letter, apostrophe, or hyphen, add it to the word buffer
                 word[wordlen] = tolower(c);
                 wordlen++;
                 isword = 1;
@@ -154,21 +166,57 @@ void scorer(int threadnumber, int *rtospipe, int *stocpipe)
 
     /* Set up pipe/stream for reading */
     FILE *rtosstreamr;
-    if(DEBUG) printf("[Scorer %d] Closing write end of rtos pipe %d (fd %d)\n", threadnumber, threadnumber, threadnumber*2+1);
+    if(DEBUG) printf("[Scorer %d] Closing write end of rtos pipe %d (fd %d)\n", threadnumber, threadnumber, rtospipe[threadnumber*2+1]);
     close(rtospipe[threadnumber*2+1]); // Close pipe write end
     rtosstreamr = fdopen(rtospipe[threadnumber*2], "r"); // Open stream for pipe read end
 
     /* Set up pipe/stream for writing */
     FILE *stocstreamw;
+    if(DEBUG) printf("[Scorer %d] Closing read end of stoc pipe (fd %d)\n", threadnumber, stocpipe[0]);
     close(stocpipe[0]); // Close pipe read end
     stocstreamw = fdopen(stocpipe[1], "w"); // Open stream for pipe write end
 
-    char word[MAX_WORD_LENGTH];
-    for(;;){
-        if(fgets(word, MAX_WORD_LENGTH, rtosstreamr) == NULL) break;
-        word[strlen(word)-1] = '\0';
-        if(DEBUG > 1) printf("[Scorer %d] Got word of len %d: %s\n", threadnumber, strlen(word), word);
+//    char word[MAX_WORD_SIZE];
+//    for(;;){
+//        int result;stocpipe[0]
+//        result = fscanf(rtosstreamr, "%s", &word);
+//        printf("result: %d\n", result);
+//        fflush(NULL);
+//        if(result == -1) break;
+//        if(DEBUG > 1) printf("[Scorer %d] Got word of len %d: %s\n", threadnumber, (int) strlen(word), word);
+//    }
+
+    /* Set up hashmap for storing words and their counts */
+    struct wordnode *wordhash = NULL;
+
+    /* Get words */
+    char newword[MAX_WORD_SIZE];
+    while(fgets(newword, MAX_WORD_SIZE, rtosstreamr) != NULL){
+        newword[strlen(newword)-1] = '\0';
+        if(DEBUG > 1) printf("[Scorer %d] Got word of len %d: %s\n", threadnumber, (int) strlen(newword), newword);
+
+        /* Update word count in hashmap */
+        struct wordnode *wordentry = (struct wordnode *) malloc(sizeof(struct wordnode));
+        HASH_FIND_STR(wordhash, "croods", wordentry);
+        if(wordentry == NULL){ // If it's not already in the hashmap, then add it
+            strcpy(wordentry->word, newword);
+            wordentry->count = 1;
+            HASH_ADD_STR(wordhash, word, wordentry);
+        }else{ // If it is already in the hashmap, then increment the count
+            HASH_DEL(wordhash, wordentry);
+            wordentry->count++;
+            HASH_ADD_STR(wordhash, word, wordentry);
+        }
     }
+
+    if(DEBUG > 1){
+        struct wordnode *s = (struct wordnode *) malloc(sizeof(struct wordnode));
+        for(s = wordhash; s != NULL; s = s->hh.next){
+            printf("Count: %d, Word: %s\n", s->count, s->word);
+        }
+    }
+
+    fflush(NULL);
 
     /* Close streams */
     fclose(rtosstreamr);
