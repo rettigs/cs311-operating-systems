@@ -35,26 +35,46 @@ int main(int argc, char *argv[])
                 }
         }
         if (threads < 1) {
-                printf("Error: Must specify at least 1 sort thread\n");
+                printf("Error: Must specify at least 1 scorer thread\n");
                 exit(EXIT_FAILURE);
         }
         if (infd == -1) error("Error: Could not open input file");
         if (outfd == -1) error("Error: Could not open output file");
 
-        // Create tosort pipes
-        int * tosortpipes[threads];
+        /* Create reader -> scorer pipes */
+        int rtos[threads][2];
         for (int i = 0; i < threads; i++) {
-                int pipefds[2];
-                tosortpipes[i] = pipefds;
-                if (pipe(tosortpipes[i]) == -1) error("Error: Could not create input pipe");
-        }
+                rtos[i] = pipefds;
+                if (pipe(&rtos[i]) == -1) error("Error: Could not create reader -> scorer pipe");
 
-        // Create fromsort pipes
-        int * fromsortpipes[threads];
-        for (int i = 0; i < threads; i++) {
-                int pipefds[2];
-                fromsortpipes[i] = pipefds;
-                if (pipe(fromsortpipes[i]) == -1) error("Error: Could not create output pipe");
+        /* Spin off reader process */
+        pid_t rpid;
+        switch(rpid = fork()){
+            case -1: // error case
+                error("Could not fork reader process");
+            case 0: // child case
+                reader();
+        } // parent continues
+
+        /* Spin off scorer processes */
+        pid_t spid[thread];
+        for(int i = 0; i < threads; i++){
+            switch(spid[i] = fork()){
+                case -1: // error case
+                    error("Could not fork scorer process");
+                case 0: // child case
+                    scorer();
+            } // parent continues
+        }
+        switch(rpid = fork()){
+            case -1: // error case
+                error("could not fork reader process");
+            case 0: // child case
+                reader();
+        } // parent continues
+
+
+        // Create tosort pipes
         }
 
         // Close read pipes
