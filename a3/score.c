@@ -197,8 +197,9 @@ void scorer(int threadnumber, int *rtospipe, int *stocpipe)
 
         /* Update word count in hashmap */
         struct wordnode *wordentry = (struct wordnode *) malloc(sizeof(struct wordnode));
-        HASH_FIND_STR(wordhash, "croods", wordentry);
+        HASH_FIND_STR(wordhash, newword, wordentry);
         if(wordentry == NULL){ // If it's not already in the hashmap, then add it
+            wordentry = (struct wordnode *) malloc(sizeof(struct wordnode));
             strcpy(wordentry->word, newword);
             wordentry->count = 1;
             HASH_ADD_STR(wordhash, word, wordentry);
