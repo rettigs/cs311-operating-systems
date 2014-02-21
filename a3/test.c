@@ -79,7 +79,12 @@ int main(int argc, char *argv[])
     wordentry->count = 4;
     HASH_ADD_STR(words, word, wordentry);
 
-    struct node *s = (struct node *) malloc(sizeof(struct node));
+    struct node *s;
+    s= (struct node *) malloc(sizeof(struct node));
+    HASH_FIND_STR(words, "bananas", s);
+    printf("Count: %d, Word: %s\n", s->count, s->word);
+
+    s = (struct node *) malloc(sizeof(struct node));
     for(s = words; s != NULL; s = s->hh.next){
         printf("Count: %d, Word: %s\n", s->count, s->word);
     }
