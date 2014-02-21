@@ -1,3 +1,5 @@
+#define _POSIX_SOURCE || _POSIX_C_SOURCE >= 1
+#define _XOPEN_SOURCE
 #define _BSD_SOURCE
 
 #include <sys/types.h>
@@ -8,6 +10,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <string.h>
+#include <ctype.h>
 #include "score.h"
 
 #define MAX_WORD_LENGTH 4096
@@ -63,7 +66,6 @@ int main(int argc, char *argv[])
             error("Could not fork off reader process");
         case 0: // Child case
             reader(threads, rtospipe, argc2, argv2);
-            _exit(EXIT_SUCCESS);
     } // Parent continues
 
     /* Fork off scorer processes */
@@ -93,14 +95,16 @@ void reader(int threads, int (*rtospipe)[2], int filec, char **filev)
     FILE *rtosstreamw[threads];
     for(int i = 0; i < threads; i++){
         close(rtospipe[i][0]); // Close pipe read end
-        rtosstreamw[i] = fdopen(rtospipe[1], "w") // Open stream for pipe write end
+        rtosstreamw[i] = fdopen(*rtospipe[1], "w"); // Open stream for pipe write end
     }
 
     /* Read the files, parse the words, and send them to the scorer processes */
     int robin = 0;
     for(int i = 0; i < filec; i++){ // For every file...
-        if((filefd = int filefd = open(filev[i], O_RDONLY)) == -1) error("Could not open input file");
-        if((FILE *filestream = fdopen(filefd, "r")) == NULL) error("Could not open input file stream");
+        int filefd = open(filev[i], O_RDONLY);
+        if(filefd == -1) error("Could not open input file");
+        FILE *filestream = fdopen(filefd, "r");
+        if(filestream == NULL) error("Could not open input file stream");
         debug("Opened file");
 
         /* Find words in the file by reading each char and storing it in a word buffer until we hit a non-letter, non-hyphen, non-apostrophe character */
@@ -123,6 +127,9 @@ void reader(int threads, int (*rtospipe)[2], int filec, char **filev)
     for(int i = 0; i < threads; i++){
         fclose(rtosstreamw[i]);
     }
+
+    debug("Reader terminating");
+    _exit(EXIT_SUCCESS);
 }
 
 /* Performs the task of a scorer process */
