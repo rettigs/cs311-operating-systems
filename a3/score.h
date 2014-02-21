@@ -1,5 +1,5 @@
-void reader(int, int (*)[2],  int, char **);
-void scorer();
+void reader(int, int **, int, char **);
+void scorer(int, int **, int *);
 void combiner();
 void usage();
 void error(char *);
