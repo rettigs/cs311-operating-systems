@@ -10,73 +10,79 @@
 #include <getopt.h>
 #include <string.h>
 #include <dirent.h>
+#include "uthash.h"
 
-#define FP_SPECIAL 1
+#define MAX_WORD_SIZE 64
 
-char *name; // Name of program
+struct node{
+    char word[MAX_WORD_SIZE];
+    int count;
+    UT_hash_handle hh;
+};
+
+///* Get a pointer to the count of the given word, adding the word to the list first if necessary */
+//int *list_get(struct node *base, char *word)
+//{
+//    for(;;){ // For every node...
+//        if(base != NULL){ // If the node exists...
+//            if(strcmp(word, base->word) == 0){ // And if it's a match...
+//                return &base->count; // Return the count
+//            }else if(base->next != NULL){ // Otherwise...
+//                base = base->next; // Move to the next node
+//            }else{ // If there is no next node, make it!
+//                struct node *newnode = (struct node *) malloc(sizeof(struct node));
+//                printf("Added new node to end\n");
+//                base->next = newnode;
+//                newnode->word = (char *) malloc(sizeof(char) * strlen(word));
+//                strcpy(newnode->word, word);
+//                newnode->count = 0;
+//                return &newnode->count;
+//            }
+//        }else{ // If the node doesn't exist, make it! (used for initializing a blank list)
+//            struct node *newnode = (struct node *) malloc(sizeof(struct node));
+//            printf("Created base\n");
+//            base = newnode;
+//            newnode->word = (char *) malloc(sizeof(char) * strlen(word));
+//            strcpy(newnode->word, word);
+//            newnode->count = 0;
+//            return &newnode->count;
+//        }
+//    }
+//}
+//
+///* Prints the list */
+//void list_print(struct node *base)
+//{
+//    while(base != NULL){ // For every node that exists...
+//        printf("%d %s\n", base->count, base->word); // Print it
+//        base = base->next; // Move to the next node
+//    }
+//}
 
 int main(int argc, char *argv[])
 {
-        name = argv[0];
+    struct node *words = NULL;
+    struct node *wordentry;
 
-        // Parse flags
-        int opt, threads, infd, outfd;
-        threads = 1;
-        infd = 0;
-        outfd = 1;
-        while ((opt = getopt(argc, argv, "n:")) != -1) {
-                switch (opt) {
-                        case 'n':
-                                if (sscanf(optarg, "%d", &threads) != 1) usage();
-                                break;
-                        default: // '?'
-                                usage();
-                }
-        }
-        if (threads < 1) {
-                printf("Error: Must specify at least 1 scorer thread\n");
-                exit(EXIT_FAILURE);
-        }
-        if (infd == -1) error("Error: Could not open input file");
-        if (outfd == -1) error("Error: Could not open output file");
+    wordentry = (struct node *) malloc(sizeof(struct node));
+    strcpy(wordentry->word, "apples");
+    wordentry->count = 1;
+    HASH_ADD_STR(words, word, wordentry);
 
-        int pipefd[2];
-        if(pipe(&pipefd) == -1) error("Could not create pipe");
+    wordentry = (struct node *) malloc(sizeof(struct node));
+    strcpy(wordentry->word, "bananas");
+    wordentry->count = 5;
+    HASH_ADD_STR(words, word, wordentry);
 
-        pid_t pid;
-        switch(pid = fork()){
-            case -1: // error case
-                error("Could not fork process");
-            case 0: // child case
-                close(pipefd[0]); // close read end
-                FILE *wstream = fdopen(pipefd[1], "w");
-                char *buf = "hello from child";
-                fputs(buf, wstream);
-                fclose(wstream);
-                _exit(1);
-            default: // parent case
-                close(pipefd[1]); // close write end
-                FILE *rstream = fdopen(pipefd[0], "r");
-                char buf2[17];
-                fgets(buf2, 17, rstream);
-                fclose(rstream);
-                printf("Message: %s\n", buf2);
-        }
+    wordentry = (struct node *) malloc(sizeof(struct node));
+    strcpy(wordentry->word, "peaches");
+    wordentry->count = 4;
+    HASH_ADD_STR(words, word, wordentry);
 
-        exit(EXIT_SUCCESS);
-}
+    struct node *s = (struct node *) malloc(sizeof(struct node));
+    for(s = words; s != NULL; s = s->hh.next){
+        printf("Count: %d, Word: %s\n", s->count, s->word);
+    }
 
-/* Print usage info and exit */
-void usage()
-{
-        printf("Usage: %s -t <#ofsortthreads> [-i infile] [-o outfile]\n",
-        name);
-        exit(EXIT_FAILURE);
-}
-
-/* Print given error message and exit */
-void error(char *message)
-{
-        perror(message);
-        exit(EXIT_FAILURE);
+    exit(EXIT_SUCCESS);
 }
