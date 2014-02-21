@@ -93,13 +93,13 @@ int main(int argc, char *argv[])
             case -1: // Error case
                 error("Could not fork off scorer process");
             case 0: // Child case
-                scorer(threadnumber, rtospipe, (int *) stocpipe);
+                scorer(threadnumber, rtospipe, stocpipe);
         } // Parent continues
         threadnumber++;
     }
 
     /* Become the combiner process */
-    combiner();
+    combiner(threads, stocpipe, outfd);
 
     exit(EXIT_SUCCESS);
 }
@@ -210,33 +210,81 @@ void scorer(int threadnumber, int *rtospipe, int *stocpipe)
         }
     }
 
-    if(DEBUG > 1){
-        struct wordnode *s = (struct wordnode *) malloc(sizeof(struct wordnode));
-        for(s = wordhash; s != NULL; s = s->hh.next){
-            printf("Count: %d, Word: %s\n", s->count, s->word);
-        }
+    /* Send the score info to the combiner process */
+    struct wordnode *s = (struct wordnode *) malloc(sizeof(struct wordnode));
+    for(s = wordhash; s != NULL; s = s->hh.next){
+        char line[10+1+MAX_WORD_SIZE]; // For a count of type int (max 10 digits), a space, and a word 
+        sprintf(line, "%d %s\n", s->count, s->word);
+        if(DEBUG > 1) printf("[Scorer %d] Sending to combiner: %s", threadnumber, line);
+        fputs(line, stocstreamw);
     }
 
-    fflush(NULL);
-
     /* Close streams */
+    if(DEBUG) printf("[Scorer %d] Closing reader -> scorer stream\n", threadnumber);
     fclose(rtosstreamr);
+    if(DEBUG) printf("[Scorer %d] Closing scorer -> combiner stream\n", threadnumber);
     fclose(stocstreamw);
 
     if(DEBUG) printf("[Scorer %d] Terminating\n", threadnumber);
+    fflush(NULL);
     _exit(EXIT_SUCCESS);
 }
 
 /* Performs the task of the combiner process */
-void combiner()
+void combiner(int threads, int *stocpipe, int outfd)
 {
     if(DEBUG) printf("[Combiner] Started\n");
+
+    /* Set up pipe/stream for reading */
+    FILE *stocstreamr;
+    if(DEBUG) printf("[Combiner] Closing write end of stoc pipe (fd %d)\n", stocpipe[1]);
+    close(stocpipe[1]); // Close pipe read end
+    stocstreamr = fdopen(stocpipe[0], "r"); // Open stream for pipe read end
+
+    /* Set up stream for writing */
+    FILE *ctoostreamw;
+    ctoostreamw = fdopen(outfd, "w"); // Open stream for output
+
+    /* Set up hashmap for storing words and their counts */
+    struct wordnode *wordhash = NULL;
+
+    /* Get words and their counts */
+    int newcount;
+    char newword[MAX_WORD_SIZE];
+    char newline[10+1+MAX_WORD_SIZE];
+    while(fgets(newline, 10+1+MAX_WORD_SIZE, stocstreamr) != NULL){
+        newline[strlen(newline)-1] = '\0';
+
+        if(sscanf(newline, "%d %s ", &newcount, newword) < 1) error("Error reading from scorer -> combiner stream");
+
+        /* Update word count in hashmap */
+        struct wordnode *wordentry = (struct wordnode *) malloc(sizeof(struct wordnode));
+        HASH_FIND_STR(wordhash, newword, wordentry);
+        if(wordentry == NULL){ // If it's not already in the hashmap, then add it
+            wordentry = (struct wordnode *) malloc(sizeof(struct wordnode));
+            strcpy(wordentry->word, newword);
+            wordentry->count = 1;
+            HASH_ADD_STR(wordhash, word, wordentry);
+        }else{ // If it is already in the hashmap, then sum the counts
+            HASH_DEL(wordhash, wordentry);
+            wordentry->count += newcount;
+            HASH_ADD_STR(wordhash, word, wordentry);
+        }
+    }
+
+    /* Close streams */
+    if(DEBUG) printf("[Combiner] Closing scorer -> combiner stream\n");
+    fclose(stocstreamr);
+    if(DEBUG) printf("[Combiner] Closing combiner -> output stream\n");
+    fclose(ctoostreamw);
+
+    if(DEBUG) printf("[Combiner] Terminating\n");
 }
 
 /* Print usage info and exit */
 void usage()
 {
-    printf("Usage: %s [-t scorer_threads] [-o outfile] [-d] FILE...\n", name);
+    printf("Usage: %s [-t scorer_threads] [-o outfile] [-d]... FILE...\n", name);
     exit(EXIT_FAILURE);
 }
 
