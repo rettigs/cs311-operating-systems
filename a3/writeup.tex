@@ -66,24 +66,32 @@
 
 %to remove page numbers, set the page style to empty
 
-\section*{Assignment 3 Write-up}
+\section*{Assignment 2 Write-up}
 \hrule
 
 \subsection*{Design}
 \begin{itemize}
-        \item The program will read the argument and create a corresponding number of pipes.  It will then fork off the sorting processes, which each close the write end of their input pipe and the read end of their output pipe, then exec /bin/sort.  The main process will then read the file word by word and distribute them to the sort processes through the pipes, and once finished, it will close off its write ends and start reading the read ends of its pipes, one word at a time in round robin fashion.  It stores the most recent word in memory so it knows to ignore it if it read duplicate words.  After printing every unique word, it waits for the children so that they can terminate, and then terminates itself.  The main process listens for signals the entire time, and upon receiving a signal to terminate, it terminates all children.
+    \item The 3 different types of processes will be called "reader", "scorer", and "combiner", with the main process eventually becoming the combiner after parsing the arguments, creating the pipes, and forking off the children.
+    \item To implement the maximum of 8 tfidf processes at once, the combiner will first spawn 8, then spawn another one each time it gets an EOF from a tfidf process's pipe (and waits for it) as long as there are still additional files to search.
 \end{itemize}
 
 \subsection*{Work Log}
+\begin{verbatim}
 
-\subsection*{Challenges}
+\end{verbatim}
+
+\subsection*{Challenges Overcame}
+\begin{itemize}
+    \item Figuring out how to use opendir(), readdir(), and getline() was a little tricky at first, but I figured it out.
+    \item Learning how to properly format sscanf() and snprintf() strings was confusing, but I got it after much trial and error.
+    \item Learning how to recurse directories was difficult, but using a recursive function made it easier to deal with.
+\end{itemize}
 
 \subsection*{Questions}
-
-\subsubsection*{What do you think the main point of this assignment is?}
-
-\subsubsection*{How did you ensure your solution was correct?}
-
-\subsubsection*{What did you learn?}
+\begin{enumerate}
+    \item The main point of the assignment was to learn the basics of performing file I/O in C using the Linux programming interface.
+    \item I tested all functions of bdiff with different files in different situations, including those where one file was bigger than the other and where multiple changes were made.  I tested bpatch in a similar way and achieved successful results, but was not able to get bpatch -r working properly; this was tested using several files in nested directories.
+    \item I learned how to use opendir(), readdir(), sscanf(), snprintf(), and getline().
+\end{enumerate}
 
 \end{document}
