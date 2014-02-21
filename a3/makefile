@@ -12,8 +12,8 @@ TARGET3 = test
 
 c:
 	${CC} ${CFLAGS} ${TARGET1}.c -o ${TARGET1} ${LDFLAGS}
-	${CC} ${CFLAGS} ${TARGET2}.c -o ${TARGET2} ${LDFLAGS}
-	${CC} ${CFLAGS} ${TARGET3}.c -o ${TARGET3} ${LDFLAGS}
+#	${CC} ${CFLAGS} ${TARGET2}.c -o ${TARGET2} ${LDFLAGS}
+#	${CC} ${CFLAGS} ${TARGET3}.c -o ${TARGET3} ${LDFLAGS}
 
 
 # Makes LaTeX into a PDF
