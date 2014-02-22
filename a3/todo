@@ -1,1 +1,2 @@
-make sure to exec the score program from the search program
+- make sure to exec the score program from the search program
+- fix multithreaded score not being able to use multiple input files
