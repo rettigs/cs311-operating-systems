@@ -329,12 +329,13 @@ Date:   Thu Feb 20 09:14:20 2014 -0800
 \begin{itemize}
     \item Learning how to use the uthash implementation was difficult at first, but definitely worth it given how much time it saved me than if I had to write one my own.
     \item Early on, I had a major issue where my score program was hanging, and I couldn't figure out why.  I finally realized that it was because I hadn't closed all the pipes in every process.
+    \item The biggest bug I had with the score program was when I would segfault when trying to write to the output stream with the combiner process on the *second* file only, not the first.  It took me a while to see that since I was reusing the same process for the combiner (unlike with the others), I couldn't close the streams after the first file!
 \end{itemize}
 
 \subsection*{Questions}
 \begin{enumerate}
     \item The main point of the assignment was to learn the basics of managing multiple processes in Linux, using functions such as fork(), exec(), and wait().  The secondary purposes of this assignment were to learn the semantics of using pipe and stream I/O in Linux, as well as how to handle signals via signal handlers registered through sigaction().
-    \item I tested my score program using a variety of file amounts, file sizes, and scorer process amounts, and tested my search program using a variety of different database states, search terms, and search term amounts.  The search program appears to work flawlessly, reading databases containing data for multiple documents and combining the tfidf scores for each search term in each document to produce overall relevance scores for each document.  The scorer, however, only seems to work with one file at a time, for reasons which are unclear to me.
+    \item I tested my score program using a variety of file amounts, file sizes, and scorer process amounts, and tested my search program using a variety of different database states, search terms, and search term amounts.  The search program appears to work flawlessly, reading databases containing data for multiple documents and combining the tfidf scores for each search term in each document to produce overall relevance scores for each document.  The scorer also appears to function perfectly with 1 to n threads and 1 to m files.  The search program is able to read the data output by the score program.
     \item I learned a lot about the uthash hashmap implementation, which I used for both my score and search programs.  I also got more comfortable with pipe/stream I/O and signal handling, but besides that, I don't really feel like I learned much in particular.  Rather, I feel like my C programming skills have improved overall.
 \end{enumerate}
 

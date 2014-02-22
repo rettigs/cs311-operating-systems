@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
     /* Print relevance of each document */
     struct filenode *fileentry = (struct filenode *) malloc(sizeof(struct filenode));
     for(fileentry = filehash; fileentry != NULL; fileentry = fileentry->hh.next){ // For every file...
-        /*if(fileentry->relevance > 0.0) */printf("File: %s\tRelevance: %f\n", fileentry->path, fileentry->relevance);
+        if(fileentry->relevance > 0.0) printf("File: %s\tRelevance: %f\n", fileentry->path, fileentry->relevance);
     }
 
     exit(EXIT_SUCCESS);

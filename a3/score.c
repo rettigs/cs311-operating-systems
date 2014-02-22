@@ -308,11 +308,7 @@ void combiner(int threads, int *rtospipe, int *stocpipe, char *file, int outfd)
 //    if(DEBUG) printf("[Combiner] Count sum: %s", countsumline);
 //    fputs(countsumline, ctoostreamw);
 
-    /* Close streams */
-    if(DEBUG) printf("[Combiner] Closing scorer -> combiner stream\n");
-    fclose(stocstreamr);
-    if(DEBUG) printf("[Combiner] Closing combiner -> output stream\n");
-    fclose(ctoostreamw);
+    fflush(NULL);
 
     if(DEBUG) printf("[Combiner] Terminating\n");
 }
