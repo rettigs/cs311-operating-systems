@@ -1,2 +1,5 @@
 - make sure to exec the score program from the search program
 - fix multithreaded score sometimes failing with lots of input
+- exec the processes in score.c
+- make search.c exec score.c if no database
+- show usage if not enough args specified
