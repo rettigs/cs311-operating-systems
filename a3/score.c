@@ -294,10 +294,10 @@ void combiner(int threads, int *rtospipe, int *stocpipe, char *file, int outfd)
     }
 
     /* Write count sum to data store */
-    char countsumline[10]; // For a count of type int (max 10 digits) 
-    sprintf(countsumline, "%d\n", countsum);
-    if(DEBUG) printf("[Combiner] Count sum: %s", countsumline);
-    fputs(countsumline, ctoostreamw);
+//    char countsumline[10]; // For a count of type int (max 10 digits) 
+//    sprintf(countsumline, "%d\n", countsum);
+//    if(DEBUG) printf("[Combiner] Count sum: %s", countsumline);
+//    fputs(countsumline, ctoostreamw);
 
     /* Close streams */
     if(DEBUG) printf("[Combiner] Closing scorer -> combiner stream\n");
