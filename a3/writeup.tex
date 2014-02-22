@@ -78,7 +78,251 @@
 
 \subsection*{Work Log}
 \begin{verbatim}
+commit bc783ff8398f44ec1cfa9c110ad8713722ac27bc
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 23:22:57 2014 -0800
 
+    commit test database
+
+commit b81af97fe2bc08fd9c9b89dba8302efb7dd08a53
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 23:20:17 2014 -0800
+
+    add timings data and plot
+
+commit e7756aeed5e462c220255a09e2bbb76346bdd811
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 22:22:40 2014 -0800
+
+    mostly done with writeup
+
+commit 91315d910e245209191f2f3bf1bda6ed2608d736
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 21:50:15 2014 -0800
+
+    score and search now both handle termination signals
+
+commit feee09576e5917a4f22f6868084ccadd1ea48d3b
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 21:49:41 2014 -0800
+
+    updated dummyfile2 to be smaller
+
+commit dec51426d9e363040f790b08a0d62e28ebdf4a24
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 20:24:17 2014 -0800
+
+    search: works perfectly, still needs multithreading
+
+commit 33d239f04e9a1b43a6102c470e1bc51a655622ae
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 19:56:37 2014 -0800
+
+    search: mostly done, still needs testing and multithreading
+
+commit c9dd8ab59bbf9d9ba1f0619e1ae9c47c23fd0ab6
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 18:48:18 2014 -0800
+
+    score: don't write totalsum because it's useless
+
+commit f39f3c82cbf60fb3f6fa2074cf1359cd23fef3bb
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 18:08:40 2014 -0800
+
+    add search.c to makefile
+
+commit 70080b697d1d455a99ca4fe4a1250427c987b07c
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 18:08:14 2014 -0800
+
+    update todo
+
+commit 161cb697641929368fb70cfe599693a82bf6493b
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 17:42:59 2014 -0800
+
+    search: initial commit (just copied score program)
+
+commit a5d0c1ad6839019b6e32e0be4e44ef5014e869a5
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 17:41:20 2014 -0800
+
+    score: differentiate scores for different files; still buggy (won't run with multiple files)
+
+commit 98082287b302e50b6e658f3b772930d7f0d0e11c
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 16:57:50 2014 -0800
+
+    score: works with output files now
+
+commit f54aaa9dbce95b39474bb983bf0b7970fa51044f
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 16:49:45 2014 -0800
+
+    updating todo again
+
+commit 95a14d7463d058f694d01a2d4b4a9eac1f66f1c7
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 16:46:19 2014 -0800
+
+    update todo
+
+commit b1e520f4976702fbc3f1475062546a1b7d66e7c3
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 16:33:29 2014 -0800
+
+    score: almost done, multithreading fixed (I didn't close ALL of the pipes >.>)
+
+commit 4b3fcd7a0dea7d9f655ad837474e03fdcb337460
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 15:46:49 2014 -0800
+
+    score: doing crazy temporary hacks to make it completely single-threaded, and it works perfectly...
+
+commit 9b40427a99ae9ef2ed2168cbd00ad662acc6f080
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 15:25:53 2014 -0800
+
+    score: mostly done with combiner, still need to debug
+
+commit c23474d48827453f201d2e194e05bf71055e772c
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 14:03:19 2014 -0800
+
+    score: scorer works single threaded, will fix multithreadedness later
+
+commit 8641cc00bac03a9ce2beabf0050283cf1fe64d26
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 13:43:28 2014 -0800
+
+    score: done adding hashmap functionality to scorer process
+
+commit e64fc0ef5c99923c74ad1a351f1ad626bb57c8d7
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 13:43:16 2014 -0800
+
+    done testing hashmap
+
+commit 338c65cad17f882ee3a01d37c0c3d11ec5789c65
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 13:04:27 2014 -0800
+
+    found good hashing library, tested good
+
+commit 654915f47a0e728dae2ae86073c17b361a5f2b94
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Feb 21 00:33:39 2014 -0800
+
+    done with summary 19
+
+commit f30337f29f6244d8735a3a5c9b0ae8951b72bd04
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 20 23:44:51 2014 -0800
+
+    score: reader process done, scorer processes receiving words properly, still need to tally and send to combiner
+
+commit 0910a952427b8afb90ba22b96287af95a5c41bf6
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 20 23:44:25 2014 -0800
+
+    use shorter dummyfile1
+
+commit 360d599d16732182e5ede44815f269e0edaea3f7
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 20 21:13:52 2014 -0800
+
+    commit dummy files for testing with
+
+commit 98eb66d84c72301ca564459993e70868a9a86e88
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 20 21:11:02 2014 -0800
+
+    updating makefile
+
+commit 562a0dc5fe742e24bbce6255c69dcad8aa5a7d4a
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 20 21:08:28 2014 -0800
+
+    Debugging reader and scorer segfaults
+
+commit 4d70da6cfab9aae171000d330c80372cf688fe75
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 20 20:08:44 2014 -0800
+
+    mostly done with reader process in score program, but need to integration test
+
+commit 47f74928f7df57a4ddb0cdfa834d38b9679fc28b
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 20 19:29:17 2014 -0800
+
+    initial implementation of reader process for score program; still requires testing
+
+commit 397e0d609198d82762844c91705b52273d36edba
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 20 18:28:16 2014 -0800
+
+    score program reformatting, finish parsing flags and args
+
+commit 2558b876abca083dc21192acde4ce13b481b8205
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 20 18:27:23 2014 -0800
+
+    add todo list
+
+commit 59a352412ea3a8ef84b18c42e8222911c82648bf
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 20 17:12:28 2014 -0800
+
+    done with basic pipe creation and forking in score.c
+
+commit 3e5783e06a140446b6b8af6cf8567663484f2880
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 20 17:12:14 2014 -0800
+
+    adding score.h
+
+commit 0165076b0dc6a31b7f47e05c439343a6212ebedb
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 20 16:51:10 2014 -0800
+
+    confident with testing pipes, streams, and forking
+
+commit c17c337362ec80818e037cd08d9a3ddb2820d371
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 20 16:28:52 2014 -0800
+
+    removing old unrelated files
+
+commit c32955ce46f8e9e788d9532ca531622cb5f1e16a
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 20 16:28:01 2014 -0800
+
+    update makefile
+
+commit 5964da1669a43ec66ace5eca6c4aae2ae938a19c
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 20 16:24:26 2014 -0800
+
+    commit test.c to score.c because I want to actually test in test.c
+
+commit 07ad4ab8e7b7793b371ecf4fb3f504399d931d98
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 20 16:15:45 2014 -0800
+
+    done with initial specification in writeup
+
+commit 0155e0bd83291b591f6475be4264111647d755db
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 20 16:15:15 2014 -0800
+
+    working on test implementation more
+
+commit d17e62120fde75f047d7b9032f169e21f345258a
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Feb 20 09:14:20 2014 -0800
+
+    preparing for initial testing
 \end{verbatim}
 
 \subsection*{Challenges Overcame}
