@@ -16,6 +16,7 @@
 #include "uthash.h"
 
 #define MAX_WORD_SIZE 64
+#define MAX_PATH_SIZE 256
 
 struct wordnode{
     char word[MAX_WORD_SIZE];
@@ -35,7 +36,7 @@ int main(int argc, char *argv[])
     threads = 1;
     outfd = 1;
     while((opt = getopt(argc, argv, "t:o:d")) != -1){
-        char *outfile = "";
+        char outfile[MAX_PATH_SIZE];
         switch(opt){
             case 't':
                 if(sscanf(optarg, "%d", &threads) != 1) usage();
@@ -181,16 +182,6 @@ void scorer(int threads, int *rtospipe, int *stocpipe, int threadnumber)
     close(stocpipe[0]); // Close pipe read end
     stocstreamw = fdopen(stocpipe[1], "w"); // Open stream for pipe write end
 
-//    char word[MAX_WORD_SIZE];
-//    for(;;){
-//        int result;stocpipe[0]
-//        result = fscanf(rtosstreamr, "%s", &word);
-//        printf("result: %d\n", result);
-//        fflush(NULL);
-//        if(result == -1) break;
-//        if(DEBUG > 1) printf("[Scorer %d] Got word of len %d: %s\n", threadnumber, (int) strlen(word), word);
-//    }
-
     /* Set up hashmap for storing words and their counts */
     struct wordnode *wordhash = NULL;
 
@@ -262,7 +253,6 @@ void combiner(int threads, int *rtospipe, int *stocpipe, int outfd)
     char newline[10+1+MAX_WORD_SIZE];
     while(fgets(newline, 10+1+MAX_WORD_SIZE, stocstreamr) != NULL){
         newline[strlen(newline)-1] = '\0';
-
         if(sscanf(newline, "%d %s ", &newcount, newword) < 1) error("Error reading from scorer -> combiner stream");
 
         /* Update word count in hashmap */
@@ -285,6 +275,7 @@ void combiner(int threads, int *rtospipe, int *stocpipe, int outfd)
         char line[10+1+MAX_WORD_SIZE]; // For a count of type int (max 10 digits), a space, and a word 
         sprintf(line, "%d %s\n", s->count, s->word);
         if(DEBUG > 1) printf("[Combiner] Output: %s", line);
+        fputs(line, ctoostreamw);
     }
 
     /* Close streams */
