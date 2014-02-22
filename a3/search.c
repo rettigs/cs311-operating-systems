@@ -78,11 +78,8 @@ int main(int argc, char *argv[])
     struct filenode *filehash = NULL;
 
     /* Loop through all segments in input data */
-    int totaldocs = 0;
-    int founddocs = 0;
     char newpath[MAX_PATH_SIZE];
     while(fscanf(instream, ": %s ", newpath) > 0){ // For every segment in the file...
-        totaldocs++;
 
         /* Set up hashmap for storing words and their counts */
         struct wordnode *newwordhash = NULL;
@@ -114,23 +111,28 @@ int main(int argc, char *argv[])
         HASH_ADD_STR(filehash, path, fileentry);
     }
 
+    int totaldocs, founddocs;
     for(int i = 0; i < argc2; i++){ // For every search term...
-        char *path = argv2[i];
+        char *term = argv2[i];
+        totaldocs = founddocs = 0;
 
-        /* First pass through files to update founddocs */
+        /* First pass through files to update totaldocs and founddocs */
         struct filenode *fileentry = (struct filenode *) malloc(sizeof(struct filenode));
         for(fileentry = filehash; fileentry != NULL; fileentry = fileentry->hh.next){ // For every file...
             struct wordnode *wordentry = (struct wordnode *) malloc(sizeof(struct wordnode));
-            HASH_FIND_STR(fileentry->wordhash, path, wordentry);
+            HASH_FIND_STR(fileentry->wordhash, term, wordentry);
             if(wordentry != NULL){ // If the search term is in the file...
                 founddocs++; // Increment founddocs
             }
+            totaldocs++;
         }
+
+        if(DEBUG) printf("founddocs for term '%s': %d\n", term, founddocs);
 
         /* Second pass through files to calculate tfidf for each one */
         for(fileentry = filehash; fileentry != NULL; fileentry = fileentry->hh.next){ // For every file...
             struct wordnode *wordentry = (struct wordnode *) malloc(sizeof(struct wordnode));
-            HASH_FIND_STR(fileentry->wordhash, path, wordentry);
+            HASH_FIND_STR(fileentry->wordhash, term, wordentry);
             if(wordentry != NULL){ // If the search term is in the file...
                 fileentry->relevance += tfidf(wordentry->count, totaldocs, founddocs);
             }
@@ -140,7 +142,7 @@ int main(int argc, char *argv[])
     /* Print relevance of each document */
     struct filenode *fileentry = (struct filenode *) malloc(sizeof(struct filenode));
     for(fileentry = filehash; fileentry != NULL; fileentry = fileentry->hh.next){ // For every file...
-        printf("File: %s\tRelevance: %f\n", fileentry->path, fileentry->relevance);
+        /*if(fileentry->relevance > 0.0) */printf("File: %s\tRelevance: %f\n", fileentry->path, fileentry->relevance);
     }
 
     exit(EXIT_SUCCESS);
@@ -148,7 +150,8 @@ int main(int argc, char *argv[])
 
 /* Why the hell does this need its own process */
 double tfidf(int termcount, int totaldocs, int founddocs){
-    return termcount * log(totaldocs / founddocs);
+    if(founddocs < 1) return 0;
+    else return ((double) termcount) * log(((double) totaldocs) / ((double) founddocs));
 }
 
 /* Print usage info and exit */
