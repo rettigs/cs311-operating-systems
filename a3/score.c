@@ -75,29 +75,48 @@ int main(int argc, char *argv[])
     if(pipe((int *) &stocpipe) == -1) error("Error: Could not create scorer -> combiner pipe");
 
     /* Fork off reader process */
-            reader(threads, rtospipe, argc2, argv2);
+    pid_t rpid;
+    switch(rpid = fork()){
+        case -1: // Error case
+            error("Could not fork off reader process");
+        case 0: // Child case
+            reader(threads, rtospipe, stocpipe, argc2, argv2);
+    } // Parent continues
 
     if(DEBUG) printf("[Main] Forked off reader process\n");
 
-                scorer(0, rtospipe, stocpipe);
+    /* Fork off scorer processes */
+    pid_t spid[threads];
+    int threadnumber = 0;
+    for(int i = 0; i < threads; i++){
+        switch(spid[i] = fork()){
+            case -1: // Error case
+                error("Could not fork off scorer process");
+            case 0: // Child case
+                scorer(threads, rtospipe, stocpipe, threadnumber);
+        } // Parent continues
+        threadnumber++;
+    }
 
     /* Become the combiner process */
-    combiner(threads, stocpipe, outfd);
+    combiner(threads, rtospipe, stocpipe, outfd);
 
     exit(EXIT_SUCCESS);
 }
 
 /* Performs the task of the reader process */
-void reader(int threads, int *rtospipe, int filec, char **filev)
+void reader(int threads, int *rtospipe, int *stocpipe, int filec, char **filev)
 {
     if(DEBUG) printf("[Reader] Starting\n");
 
-    /* Set up pipes/streams for writing */
+    /* Set up pipes/streams by closing all we don't need and opening streams to the rest */
     FILE *rtosstreamw[threads];
     for(int i = 0; i < threads; i++){
-        if(DEBUG) printf("[Reader] Closing read end of rtos pipe %d (fd %d)\n", i, rtospipe[i*2]);
         rtosstreamw[i] = fdopen(rtospipe[i*2+1], "w"); // Open stream for pipe write end
+        close(rtospipe[i*2]); // Close pipe read end
     }
+    close(stocpipe[0]);
+    close(stocpipe[1]);
 
     /* Read the files, parse the words, and send them to the scorer processes */
     int robin = 0;
@@ -134,25 +153,32 @@ void reader(int threads, int *rtospipe, int filec, char **filev)
 
     /* Close streams */
     for(int i = 0; i < threads; i++){
+        if(DEBUG) printf("[Reader] Closing reader -> scorer stream %d\n", i);
         fclose(rtosstreamw[i]);
     }
 
     if(DEBUG) printf("[Reader] Terminating\n");
+    _exit(EXIT_SUCCESS);
 }
 
 /* Performs the task of a scorer process */
-void scorer(int threadnumber, int *rtospipe, int *stocpipe)
+void scorer(int threads, int *rtospipe, int *stocpipe, int threadnumber)
 {
     if(DEBUG) printf("[Scorer %d] Started\n", threadnumber);
 
-    /* Set up pipe/stream for reading */
+    /* Set up pipes/streams by closing all we don't need and opening streams to the rest */
     FILE *rtosstreamr;
-    if(DEBUG) printf("[Scorer %d] Closing write end of rtos pipe %d (fd %d)\n", threadnumber, threadnumber, rtospipe[threadnumber*2+1]);
-    rtosstreamr = fdopen(rtospipe[threadnumber*2], "r"); // Open stream for pipe read end
-
-    /* Set up pipe/stream for writing */
+    for(int i = 0; i < threads; i++){
+        if(i == threadnumber){
+            rtosstreamr = fdopen(rtospipe[i*2], "r"); // Open stream for pipe read end
+            close(rtospipe[i*2+1]); // Close pipe write end
+        }else{
+            close(rtospipe[i*2]); // Close pipe read end
+            close(rtospipe[i*2+1]); // Close pipe write end
+        }
+    }
     FILE *stocstreamw;
-    if(DEBUG) printf("[Scorer %d] Closing read end of stoc pipe (fd %d)\n", threadnumber, stocpipe[0]);
+    close(stocpipe[0]); // Close pipe read end
     stocstreamw = fdopen(stocpipe[1], "w"); // Open stream for pipe write end
 
 //    char word[MAX_WORD_SIZE];
@@ -206,17 +232,22 @@ void scorer(int threadnumber, int *rtospipe, int *stocpipe)
 
     if(DEBUG) printf("[Scorer %d] Terminating\n", threadnumber);
     fflush(NULL);
+    _exit(EXIT_SUCCESS);
 }
 
 /* Performs the task of the combiner process */
-void combiner(int threads, int *stocpipe, int outfd)
+void combiner(int threads, int *rtospipe, int *stocpipe, int outfd)
 {
     if(DEBUG) printf("[Combiner] Started\n");
 
-    /* Set up pipe/stream for reading */
+    /* Set up pipes/streams by closing all we don't need and opening streams to the rest */
+    for(int i = 0; i < threads; i++){
+        close(rtospipe[i*2]); // Close pipe read end
+        close(rtospipe[i*2+1]); // Close pipe write end
+    }
     FILE *stocstreamr;
-    if(DEBUG) printf("[Combiner] Closing write end of stoc pipe (fd %d)\n", stocpipe[1]);
     stocstreamr = fdopen(stocpipe[0], "r"); // Open stream for pipe read end
+    close(stocpipe[1]); // Close pipe read end
 
     /* Set up stream for writing */
     FILE *ctoostreamw;
@@ -228,7 +259,11 @@ void combiner(int threads, int *stocpipe, int outfd)
     /* Get words and their counts */
     int newcount;
     char newword[MAX_WORD_SIZE];
-    while(fscanf(stocstreamr, "%d %s ", &newcount, newword) > 0){
+    char newline[10+1+MAX_WORD_SIZE];
+    while(fgets(newline, 10+1+MAX_WORD_SIZE, stocstreamr) != NULL){
+        newline[strlen(newline)-1] = '\0';
+
+        if(sscanf(newline, "%d %s ", &newcount, newword) < 1) error("Error reading from scorer -> combiner stream");
 
         /* Update word count in hashmap */
         struct wordnode *wordentry = (struct wordnode *) malloc(sizeof(struct wordnode));
