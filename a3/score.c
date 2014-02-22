@@ -26,15 +26,15 @@ struct wordnode{
 
 char *name; // Name of program
 int DEBUG = 0; // Whether we are in debug mode
+int threads = 1; // Number of scorer processes to use
+int outfd = 1; // Where to write data
 
 int main(int argc, char *argv[])
 {
     name = argv[0];
 
     /* Parse flags */
-    int opt, threads, outfd;
-    threads = 1;
-    outfd = 1;
+    int opt;
     while((opt = getopt(argc, argv, "t:o:d")) != -1){
         char outfile[MAX_PATH_SIZE];
         switch(opt){
@@ -61,6 +61,16 @@ int main(int argc, char *argv[])
     int argc2 = argc - optind;
     char **argv2 = &argv[optind];
 
+    /* Loop through every file specified */
+    for(int i = 0; i < argc2; i++){
+        score(argv2[i]);
+    }
+
+    exit(EXIT_SUCCESS);
+}
+
+/* Manages the scoring of the given file */
+void score(char *file){
     /* Create reader -> scorers pipes */
     int *rtospipe = (int *) malloc(sizeof(int) * 2 * threads);
     for(int i = 0; i < threads; i++) {
@@ -81,7 +91,7 @@ int main(int argc, char *argv[])
         case -1: // Error case
             error("Could not fork off reader process");
         case 0: // Child case
-            reader(threads, rtospipe, stocpipe, argc2, argv2);
+            reader(threads, rtospipe, stocpipe, file);
     } // Parent continues
 
     if(DEBUG) printf("[Main] Forked off reader process\n");
@@ -100,13 +110,11 @@ int main(int argc, char *argv[])
     }
 
     /* Become the combiner process */
-    combiner(threads, rtospipe, stocpipe, outfd);
-
-    exit(EXIT_SUCCESS);
+    combiner(threads, rtospipe, stocpipe, file, outfd);
 }
 
 /* Performs the task of the reader process */
-void reader(int threads, int *rtospipe, int *stocpipe, int filec, char **filev)
+void reader(int threads, int *rtospipe, int *stocpipe, char *file)
 {
     if(DEBUG) printf("[Reader] Starting\n");
 
@@ -121,34 +129,32 @@ void reader(int threads, int *rtospipe, int *stocpipe, int filec, char **filev)
 
     /* Read the files, parse the words, and send them to the scorer processes */
     int robin = 0;
-    for(int i = 0; i < filec; i++){ // For every file...
-        int filefd = open(filev[i], O_RDONLY);
-        if(filefd == -1) error("Could not open input file");
-        FILE *filestream = fdopen(filefd, "r");
-        if(filestream == NULL) error("Could not open input file stream");
-        if(DEBUG) printf("[Reader] Opened file %s\n", filev[i]);
+    int filefd = open(file, O_RDONLY);
+    if(filefd == -1) error("Could not open input file");
+    FILE *filestream = fdopen(filefd, "r");
+    if(filestream == NULL) error("Could not open input file stream");
+    if(DEBUG) printf("[Reader] Opened file %s\n", file);
 
-        /* Find words in the file by reading each char and storing it in a word buffer until we hit a non-letter, non-hyphen, non-apostrophe character */
-        char word[MAX_WORD_SIZE];
-        int wordlen = 0;
-        char c;
-        int isword = 0;
-        while((c = fgetc(filestream))){
-            if(DEBUG > 1) printf("[Reader] Got char: %c (%d)\n", c, c);
-            if(c == EOF) break;
-            else if(c == '\'' || c == '-' || isalpha(c)){ // If the char is a letter, apostrophe, or hyphen, add it to the word buffer
-                word[wordlen] = tolower(c);
-                wordlen++;
-                isword = 1;
-            }else if(isword){ // Otherwise, the word is over, so terminate it and hand it off
-                word[wordlen] = '\0';
-                wordlen = 0;
-                isword = 0;
-                if(DEBUG > 1) printf("[Reader] Next word (going to scorer %d) is: %s\n", robin % threads, word);
-                fputs(word, rtosstreamw[robin % threads]); // Hand the word to one of the scorer processes, round-robin style
-                fputs("\n", rtosstreamw[robin % threads]); // Also send a newline to delimit them.
-                robin++;
-            }
+    /* Find words in the file by reading each char and storing it in a word buffer until we hit a non-letter, non-hyphen, non-apostrophe character */
+    char word[MAX_WORD_SIZE];
+    int wordlen = 0;
+    char c;
+    int isword = 0;
+    while((c = fgetc(filestream))){
+        if(DEBUG > 1) printf("[Reader] Got char: %c (%d)\n", c, c);
+        if(c == EOF) break;
+        else if(c == '\'' || c == '-' || isalpha(c)){ // If the char is a letter, apostrophe, or hyphen, add it to the word buffer
+            word[wordlen] = tolower(c);
+            wordlen++;
+            isword = 1;
+        }else if(isword){ // Otherwise, the word is over, so terminate it and hand it off
+            word[wordlen] = '\0';
+            wordlen = 0;
+            isword = 0;
+            if(DEBUG > 1) printf("[Reader] Next word (going to scorer %d) is: %s\n", robin % threads, word);
+            fputs(word, rtosstreamw[robin % threads]); // Hand the word to one of the scorer processes, round-robin style
+            fputs("\n", rtosstreamw[robin % threads]); // Also send a newline to delimit them.
+            robin++;
         }
     }
 
@@ -227,7 +233,7 @@ void scorer(int threads, int *rtospipe, int *stocpipe, int threadnumber)
 }
 
 /* Performs the task of the combiner process */
-void combiner(int threads, int *rtospipe, int *stocpipe, int outfd)
+void combiner(int threads, int *rtospipe, int *stocpipe, char *file, int outfd)
 {
     if(DEBUG) printf("[Combiner] Started\n");
 
@@ -242,18 +248,20 @@ void combiner(int threads, int *rtospipe, int *stocpipe, int outfd)
 
     /* Set up stream for writing */
     FILE *ctoostreamw;
-    ctoostreamw = fdopen(outfd, "w"); // Open stream for output
+    ctoostreamw = fdopen(outfd, "a"); // Open stream for output
 
     /* Set up hashmap for storing words and their counts */
     struct wordnode *wordhash = NULL;
 
     /* Get words and their counts */
+    int countsum = 0;
     int newcount;
     char newword[MAX_WORD_SIZE];
     char newline[10+1+MAX_WORD_SIZE];
     while(fgets(newline, 10+1+MAX_WORD_SIZE, stocstreamr) != NULL){
         newline[strlen(newline)-1] = '\0';
         if(sscanf(newline, "%d %s ", &newcount, newword) < 1) error("Error reading from scorer -> combiner stream");
+        countsum += newcount;
 
         /* Update word count in hashmap */
         struct wordnode *wordentry = (struct wordnode *) malloc(sizeof(struct wordnode));
@@ -270,13 +278,26 @@ void combiner(int threads, int *rtospipe, int *stocpipe, int outfd)
         }
     }
 
+    /* Write file name to data store */
+    char filenameline[1 + 1 + MAX_PATH_SIZE + 1]; // For a colon, a space, a file path, and a newline.
+    sprintf(filenameline, ": %s\n", file);
+    if(DEBUG) printf("[Combiner] File scored%s", filenameline);
+    fputs(filenameline, ctoostreamw);
+
+    /* Write word counts to data store */
     struct wordnode *s = (struct wordnode *) malloc(sizeof(struct wordnode));
     for(s = wordhash; s != NULL; s = s->hh.next){
-        char line[10+1+MAX_WORD_SIZE]; // For a count of type int (max 10 digits), a space, and a word 
-        sprintf(line, "%d %s\n", s->count, s->word);
-        if(DEBUG > 1) printf("[Combiner] Output: %s", line);
-        fputs(line, ctoostreamw);
+        char wordcountline[10+1+MAX_WORD_SIZE]; // For a count of type int (max 10 digits), a space, and a word 
+        sprintf(wordcountline, "%d %s\n", s->count, s->word);
+        if(DEBUG > 1) printf("[Combiner] Output: %s", wordcountline);
+        fputs(wordcountline, ctoostreamw);
     }
+
+    /* Write count sum to data store */
+    char countsumline[10]; // For a count of type int (max 10 digits) 
+    sprintf(countsumline, "%d\n", countsum);
+    if(DEBUG) printf("[Combiner] Count sum: %s", countsumline);
+    fputs(countsumline, ctoostreamw);
 
     /* Close streams */
     if(DEBUG) printf("[Combiner] Closing scorer -> combiner stream\n");
