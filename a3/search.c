@@ -13,6 +13,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <signal.h>
 #include "search.h"
 #include "uthash.h"
 
@@ -41,6 +42,14 @@ int infd = 1; // Where to read data
 int main(int argc, char *argv[])
 {
     name = argv[0];
+
+    struct sigaction sa;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sa.sa_handler = handler;
+    if(sigaction(SIGINT, &sa, NULL) == -1) error("Could not register signal handler");
+    if(sigaction(SIGQUIT, &sa, NULL) == -1) error("Could not register signal handler");
+    if(sigaction(SIGHUP, &sa, NULL) == -1) error("Could not register signal handler");
 
     /* Parse flags */
     int opt;
@@ -152,6 +161,14 @@ int main(int argc, char *argv[])
 double tfidf(int termcount, int totaldocs, int founddocs){
     if(founddocs < 1) return 0;
     else return ((double) termcount) * log(((double) totaldocs) / ((double) founddocs));
+}
+
+/* Handles termination signals */
+void handler(int sig)
+{
+    printf("Terminating cleanly\n");
+    fflush(NULL);
+    _exit(EXIT_FAILURE);
 }
 
 /* Print usage info and exit */

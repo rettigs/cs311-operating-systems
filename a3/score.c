@@ -12,6 +12,7 @@
 #include <getopt.h>
 #include <string.h>
 #include <ctype.h>
+#include <signal.h>
 #include "score.h"
 #include "uthash.h"
 
@@ -32,6 +33,14 @@ int outfd = 1; // Where to write data
 int main(int argc, char *argv[])
 {
     name = argv[0];
+
+    struct sigaction sa;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sa.sa_handler = handler;
+    if(sigaction(SIGINT, &sa, NULL) == -1) error("Could not register signal handler");
+    if(sigaction(SIGQUIT, &sa, NULL) == -1) error("Could not register signal handler");
+    if(sigaction(SIGHUP, &sa, NULL) == -1) error("Could not register signal handler");
 
     /* Parse flags */
     int opt;
@@ -306,6 +315,14 @@ void combiner(int threads, int *rtospipe, int *stocpipe, char *file, int outfd)
     fclose(ctoostreamw);
 
     if(DEBUG) printf("[Combiner] Terminating\n");
+}
+
+/* Handles termination signals */
+void handler(int sig)
+{
+    printf("Terminating cleanly\n");
+    fflush(NULL);
+    _exit(EXIT_FAILURE);
 }
 
 /* Print usage info and exit */
