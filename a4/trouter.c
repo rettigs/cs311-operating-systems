@@ -102,7 +102,7 @@ int query(char *ip)
     char cidrip[strlen(ip)+3];
     strcat(cidrip, "/32"); // We need to add a /32 at the end of the ip for the converter to work
 
-    return search(trie, prefix_to_binary(&cidrip));
+    return search(trie, prefix_to_binary(cidrip));
 }
 
 /* Adds the given ASN to the trie for the given prefix */
