@@ -1,0 +1,93 @@
+\documentclass[letterpaper,10pt,fleqn]{article}
+
+%example of setting the fleqn parameter to the article class -- the below sets the offset from flush left (fl)
+\setlength{\mathindent}{1cm}
+
+\usepackage{graphicx}                                        
+
+\usepackage{amssymb}                                         
+\usepackage{amsmath}                                         
+\usepackage{amsthm}                                          
+
+\usepackage{alltt}                                           
+\usepackage{float}
+\usepackage{color}
+
+\usepackage{balance}
+\usepackage[TABBOTCAP, tight]{subfigure}
+\usepackage{enumitem}
+
+\usepackage{pstricks, pst-node}
+
+%the following sets the geometry of the page
+\usepackage{geometry}
+\geometry{textheight=9in, textwidth=6.5in}
+
+% random comment
+
+\newcommand{\cred}[1]{{\color{red}#1}}
+\newcommand{\cblue}[1]{{\color{blue}#1}}
+
+\usepackage{hyperref}
+
+\usepackage{textcomp}
+\usepackage{listings}
+
+\usepackage{wasysym}
+
+\def\name{Sean Rettig}
+
+%% The following metadata will show up in the PDF properties
+\hypersetup{
+  colorlinks = true,
+  urlcolor = black,
+  pdfauthor = {\name},
+  pdfkeywords = {cs311 ``operating systems''},
+  pdftitle = {CS 311 Project},
+  pdfsubject = {CS 311 Project},
+  pdfpagemode = UseNone
+}
+
+\parindent = 0.0 in
+\parskip = 0.2 in
+
+\pagestyle{empty}
+
+\numberwithin{equation}{section}
+
+\newcommand{\D}{\mathrm{d}}
+
+\newcommand\invisiblesection[1]{%
+  \refstepcounter{section}%
+  \addcontentsline{toc}{section}{\protect\numberline{\thesection}#1}%
+  \sectionmark{#1}}
+
+\begin{document}
+
+%to remove page numbers, set the page style to empty
+
+\section*{Assignment 3 Write-up}
+\hrule
+
+\subsection*{Design}
+\begin{itemize}
+    \item For the trie implementation, I will primarily just be converting the C++ code to C code, which shouldn't require much designing.  I will, however, specialize it to use an int for the ASN rather than keeping it generalized, and make it useable by multiple threads/processes at once by adding locking; a node and its children will be recursively locked for reading and writing while any write is being performed on the node or one of its children.  This will allow reads and writes in other portions of the trie to still be processed during a write.
+    \item For the main program, I will simply read the input in line-by-line with scanf(), then either add to the trie or perform a lookup depending on the operation specified.
+    \item To decide which process gets to read from the input next in the multiprocess version, a semaphore will be created and shared between them; all processes constantly check to see if the semaphore is unlocked while they are not currently doing work, and if it is, the process will lock it, read a line of input, and unlock it again.
+    \item To decide which thread gets to read from the input next in the multithreaded version, a mutex with a condition variable will be created and shared between them; all threads wait for the mutex to be unlocked while they are not currently doing work, and once it is, the thread will lock it, read a line of input, and unlock it again.  This approach will likely be much faster than the multiprocess version's, because threads waiting for an unlock do not have to constantly check if it is available.
+    \item If a thread/process reads an EOF, it will set an "end" flag that all thread/processes check before attempting to read; if it is set, the thread/process will exit.  This will prevent the other threads/processes from blocking on an empty input, and threads/processes will only terminate once they have finished what they were already working on.
+\end{itemize}
+
+\subsection*{Work Log}
+\begin{verbatim}
+\end{verbatim}
+
+\subsection*{Challenges Overcame}
+\begin{itemize}
+\end{itemize}
+
+\subsection*{Questions}
+\begin{enumerate}
+\end{enumerate}
+
+\end{document}
