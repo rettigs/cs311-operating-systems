@@ -14,16 +14,14 @@
 #include <ctype.h>
 #include <pthread.h>
 #include "trouter.h"
-//#include "trienode.h"
-
-#define MAX_WORD_SIZE 64
-#define MAX_PATH_SIZE 256
+#include "trienode.c"
 
 char *name; // Name of program
 int DEBUG = 0; // Whether we are in debug mode
 int w = 1; // Number of workers to use
 pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER; // Mutex for stdin
 int done = 0; // Whether we are done reading from stdin (have we reached EOF?)
+struct trienode *trie; // Our trie for storing ASNs
 
 /* Do BGP stuff with a trie using multiple threads */
 int main(int argc, char *argv[])
@@ -48,6 +46,9 @@ int main(int argc, char *argv[])
         printf("Must specify at least 1 worker\n");
         exit(EXIT_FAILURE);
     }
+
+    /* Initialize trie */
+    trie = init_trienode();
 
     /* Spin off w - 1 workers */
     if(DEBUG) printf("Creating %d workers\n", w);
@@ -97,13 +98,17 @@ void *worker(void *arg)
 /* Looks up an IP address in the trie and returns the corresponding ASN */
 int query(char *ip)
 {
+    /* Convert ip from dotted decimal format to binary format */
+    char cidrip[strlen(ip)+3];
+    strcat(cidrip, "/32"); // We need to add a /32 at the end of the ip for the converter to work
 
+    return search(trie, prefix_to_binary(&cidrip));
 }
 
 /* Adds the given ASN to the trie for the given prefix */
 void entry(char *prefix, int ASN)
 {
-
+    insert(trie, prefix_to_binary(prefix), ASN);
 }
 
 /* Converts an 8-bit integer to binary in string format */
