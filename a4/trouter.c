@@ -21,7 +21,9 @@
 
 char *name; // Name of program
 int DEBUG = 0; // Whether we are in debug mode
-int n = 1; // Number of worker threads to use
+int w = 1; // Number of workers to use
+pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER; // Mutex for stdin
+int done = 0; // Whether we are done reading from stdin (have we reached EOF?)
 
 /* Do BGP stuff with a trie using multiple threads */
 int main(int argc, char *argv[])
@@ -30,10 +32,10 @@ int main(int argc, char *argv[])
 
     /* Parse flags */
     int opt;
-    while((opt = getopt(argc, argv, "n:d")) != -1){
+    while((opt = getopt(argc, argv, "w:d")) != -1){
         switch(opt){
-            case 'n':
-                if(sscanf(optarg, "%d", &n) != 1) usage();
+            case 'w':
+                if(sscanf(optarg, "%d", &w) != 1) usage();
                 break;
             case 'd':
                 DEBUG++;
@@ -42,34 +44,72 @@ int main(int argc, char *argv[])
                 usage();
         }
     }
-    if(n < 1){
-        printf("Must specify at least 1 worker thread\n");
+    if(w < 1){
+        printf("Must specify at least 1 worker\n");
         exit(EXIT_FAILURE);
     }
 
-    if(DEBUG) printf("Creating %d threads\n", n);
-
-    /* Spin off worker threads */
-    for(int i = 0; i < n - 1; i++){
+    /* Spin off w - 1 workers */
+    if(DEBUG) printf("Creating %d workers\n", w);
+    for(int i = 0; i < w - 1; i++){
         pthread_t id;
         pthread_create(&id, NULL, worker, NULL);
     }
-    worker(NULL); // Become a worker
+
+    /* Become a worker */
+    worker(NULL);
 }
 
 /* Read instructions from stdin, execute them, and exit on EOF */
 void *worker(void *arg)
 {
-    printf("Hello\n");
-    fflush(NULL);
-    pthread_exit(NULL);
-    return NULL;
+    if(DEBUG) printf("Worker started\n");
+
+    char line[1+3+1+3+1+3+1+3+1+2+1+10]; // Max length of command + CIDR address + space + 32-bit decimal int
+    
+    for(;;){
+        /* Read a line from stdin, terminating if nothing is left */
+        pthread_mutex_lock(&mtx);
+        if(done){ // If a previous worker got EOF, there's nothing left for us; terminate
+            if(DEBUG) printf("Worker terminating\n");
+            pthread_exit(NULL);
+        }
+
+        if(gets(line) == NULL){ // If we got EOF, notify other workers, then terminate
+            done = 1;
+            if(DEBUG) printf("Worker terminating\n");
+            pthread_exit(NULL);
+        }
+        pthread_mutex_unlock(&mtx);
+
+        /* Process that line */
+        if(line[0] == '?'){ // Query
+            printf("The ASN for %s is: %d\n", &line[1], query(&line[1]));
+        }else if(line[0] == '!'){ // Entry
+            char prefix[3+1+3+1+3+1+3+1+2]; // Max length of a CIDR address
+            int ASN;
+            sscanf(&line[1], "%s %d", (char *) &prefix, &ASN);
+            entry((char *)&prefix, ASN);
+        }
+    }
 }
 
-/* Converts a decimal integer to a binary one in string format */
+/* Looks up an IP address in the trie and returns the corresponding ASN */
+int query(char *ip)
+{
+
+}
+
+/* Adds the given ASN to the trie for the given prefix */
+void entry(char *prefix, int ASN)
+{
+
+}
+
+/* Converts an 8-bit integer to binary in string format */
 char *dec2bin(int decimal)
 {
-	char* ret = malloc(sizeof(char) * 33); // Max length of 32-bit int plus null terminator
+	char* ret = malloc(sizeof(char) * 9); // Max length of 8-bit int plus null terminator
 	int d = decimal;
 	
 	for(int i = 128; i >= 1; i = i/2){
@@ -91,9 +131,9 @@ char *prefix_to_binary(char *prefix)
 
 	int prefix_length = atoi(slash_spot + 1);
 
-	char *prefix_portion = malloc(sizeof(char) * 16); // Max length of IPv4 address + null terminator
-    slash_spot[0] = '\0';
-    strcpy(prefix_portion, prefix);
+	char *prefix_portion_s = malloc(sizeof(char) * 16); // Max length of IPv4 address + null terminator
+    char *prefix_portion = prefix_portion_s;
+    strncpy(prefix_portion, prefix, slash_spot - prefix);
 
 	char *binary_string = malloc(sizeof(char) * 33);
 	
@@ -119,7 +159,7 @@ char *prefix_to_binary(char *prefix)
 		}
 	}
 
-    free(prefix_portion);
+    free(prefix_portion_s);
 	
 	// Alright. We have a complete binary string but we only care about the first prefix_length number of binary digits:
     binary_string[prefix_length] = '\0';
