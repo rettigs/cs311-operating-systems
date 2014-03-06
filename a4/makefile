@@ -11,7 +11,7 @@ TARGET2 = prouter
 
 c:
 	${CC} ${CFLAGS} ${TARGET1}.c -o ${TARGET1} ${LDFLAGS}
-#	${CC} ${CFLAGS} ${TARGET2}.c -o ${TARGET2} ${LDFLAGS}
+	${CC} ${CFLAGS} ${TARGET2}.c -o ${TARGET2} ${LDFLAGS}
 
 
 # Makes LaTeX into a PDF
