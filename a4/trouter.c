@@ -14,7 +14,6 @@
 #include <ctype.h>
 #include <pthread.h>
 #include "trouter.h"
-#include "trienode.c"
 
 char *name; // Name of program
 int DEBUG = 0; // Whether we are in debug mode
@@ -64,7 +63,7 @@ int main(int argc, char *argv[])
 /* Read instructions from stdin, execute them, and exit on EOF */
 void *worker(void *arg)
 {
-    if(DEBUG) printf("[Worker %d] Started\n", pthread_self());
+    if(DEBUG) printf("[Worker %d] Started\n", (int) pthread_self());
 
     char line[1+3+1+3+1+3+1+3+1+2+1+10]; // Max length of command + CIDR address + space + 32-bit decimal int
     
@@ -72,14 +71,14 @@ void *worker(void *arg)
         /* Read a line from stdin, terminating if nothing is left */
         pthread_mutex_lock(&mtx);
         if(done){ // If a previous worker got EOF, there's nothing left for us; terminate
-            if(DEBUG) printf("[Worker %d] Previous worker got EOF; terminating\n", pthread_self());
+            if(DEBUG) printf("[Worker %d] Previous worker got EOF; terminating\n", (int) pthread_self());
             pthread_mutex_unlock(&mtx);
             pthread_exit(NULL);
         }
 
         if(gets(line) == NULL){ // If we got EOF, notify other workers, then terminate
             done = 1;
-            if(DEBUG) printf("[Worker %d] Got EOF, terminating\n", pthread_self());
+            if(DEBUG) printf("[Worker %d] Got EOF, terminating\n", (int) pthread_self());
             pthread_mutex_unlock(&mtx);
             pthread_exit(NULL);
         }
@@ -107,7 +106,7 @@ int query(char *ip)
 
     char *binip = prefix_to_binary(cidrip);
 
-    if(DEBUG) printf("[Worker %d] Query: IP is %s, CIDR is %s, binary is %s\n", pthread_self(), ip, cidrip, binip);
+    if(DEBUG) printf("[Worker %d] Query: IP is %s, CIDR is %s, binary is %s\n", (int) pthread_self(), ip, cidrip, binip);
 
     return search(trie, binip);
 }
@@ -117,7 +116,7 @@ void entry(char *prefix, int ASN)
 {
     char *binprefix = prefix_to_binary(prefix);
 
-    if(DEBUG) printf("[Worker %d] Entry: CIDR is %s, binary is %s\n", pthread_self(), prefix, binprefix);
+    if(DEBUG) printf("[Worker %d] Entry: CIDR is %s, binary is %s\n", (int) pthread_self(), prefix, binprefix);
 
     insert(trie, binprefix, ASN);
 }
@@ -198,54 +197,102 @@ void error(char *message)
     exit(EXIT_FAILURE);
 }
 
-/*
-class ip_trie{
-private:
-	char *prefix_list;
-	Trie<std::pair<int, std::string> > my_trie;
-	
-public:
-	ffsn(char *prefix_list){pre
-		this->prefix_list = prefix_list;
-		std::cerr << "building trie" << std::endl;
-		this->build_prefixes();
-		std::cerr << "trie built" << std::endl;
-	}
-	
-	void build_prefixes(){
-		std::ifstream data(this->prefix_list.c_str());
-		char *prefix;
-		int AS_Number;
-		
-		if (data.fail()) {
-			std::cerr << "Unable to open BGP RIB file. Please check that the BGP_RIB_FILE" 
-			          << std::endl
-			          << "variable is set to the correct location for the file." 
-			          << std::endl
-			          << "   Current value: " << this->prefix_list
-			          << std::endl << std::endl;
-			exit(-1); // Exit program.
-		}
-		
-		std::cerr << "BGP Table: Reading BGP RIB..." << std::endl;
-		
-		while (data >> prefix) {
-			char *resultPrefix;
-			data >> AS_Number;
-			
-			// Convert AS prefix to binary string:
-			resultPrefix = prefix_to_binary(prefix);
-			
-			this->my_trie.insert(resultPrefix, std::make_pair(AS_Number, prefix));
-		}
-		std::cerr << "BGP Table: BGP RIB loaded." << std::endl;
-	}
-	
-	std::pair<int, std::string> get_ASN(char *ip){
-		ip += "/32";
-		std::pair<int, std::string> ASN = std::make_pair(-1, "");
-		this->my_trie.search(prefix_to_binary(ip), ASN);
-		return ASN;
-	}
-};
-*/
+/* Initializes a new trie node */
+struct trienode *init_trienode()
+{
+    struct trienode *trienode = malloc(sizeof(struct trienode));
+
+    trienode->populated = 0;
+    trienode->ASN = -1;
+    trienode->zero = NULL;
+    trienode->one = NULL;
+
+    return trienode;
+}
+
+/* Inserts the given value into the trie at the specified location.
+   Key is binary integer of no more than 32 bits, in string format */
+void insert(struct trienode *root, char *key, int value)
+{
+    if(strlen(key) > 0) __recurseInsert(root, key, value);
+    else{
+        if(DEBUG > 1) printf("Insert: key length is 0, placing ASN %d at root\n", value);
+        root->ASN = value;
+    }
+}
+
+/* Returns the ASN at the given location in the trie.
+   Key is binary integer of no more than 32 bits, in string format */
+int search(struct trienode *root, char *key)
+{
+    int valuebuf = root->ASN;
+    return __recurseSearch(root, key, &valuebuf);
+}
+
+void __recurseInsert(struct trienode *root, char *key, int value)
+{
+    // Root cannot be null
+    char digit = key[0];
+
+    if(DEBUG > 1) printf("Recursive insert: started, digit is %c, key is %s\n", digit, key);
+
+    if(strlen(key) <= 0){
+        // We have hit the bottom. We should shove our value at this node.
+        if(!root->populated){
+            root->ASN = value;
+            root->populated = 1;
+        }else if(DEBUG) printf("WARNING: Duplicate assignment: node already contains ASN %d; not adding %d\n", root->ASN, value);
+        return;
+    }
+
+    if(digit == '0'){
+        if(root->zero == NULL){
+            if(DEBUG > 1) printf("Recursive insert: adding 'zero' node for ASN %d at %s\n", value, key);
+            root->zero = init_trienode();
+        }
+        __recurseInsert(root->zero, &key[1], value);
+    }else{
+        if(root->one == NULL){
+            if(DEBUG > 1) printf("Recursive insert: adding 'one' node for ASN %d at %s\n", value, key);
+            root->one = init_trienode();
+        }
+        __recurseInsert(root->one, &key[1], value);
+    }
+}
+
+int __recurseSearch(struct trienode *root, char *key, int *valuebuf)
+{
+    char digit = key[0];
+
+    if(DEBUG > 1) printf("Recursive search: started, digit is %c, key is %s\n", digit, key);
+
+    if(root == NULL){
+        if(DEBUG > 1) printf("Recursive search: root is null at key %s\n", key);
+        return *valuebuf;
+    }
+
+    if(root->populated){
+        if(DEBUG > 1) printf("Recursive search: root is populated with ASN %d at key %s\n", root->ASN, key);
+        valuebuf = &root->ASN;
+    }
+
+    if(strlen(key) <= 0){
+        // We're done!
+        if(DEBUG > 1) printf("Recursive search: key exhausted, returning ASN %d\n", root->ASN);
+        return *valuebuf;
+    }
+
+    if(digit == '0'){
+        if(root->zero == NULL){
+            if(DEBUG > 1) printf("Recursive search: node at key %s has no 'zero' child, returning ASN %d\n", key, root->ASN);
+            return *valuebuf;
+        }
+        else return __recurseSearch(root->zero, &key[1], valuebuf);
+    }else{
+        if(root->one == NULL){
+            if(DEBUG > 1) printf("Recursive search: node at key %s has no 'one' child, returning ASN %d\n", key, root->ASN);
+            return *valuebuf;
+        }
+        else return __recurseSearch(root->one, &key[1], valuebuf);
+    }
+}
