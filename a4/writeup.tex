@@ -66,28 +66,165 @@
 
 %to remove page numbers, set the page style to empty
 
-\section*{Assignment 3 Write-up}
+\section*{Assignment 4 Write-up}
 \hrule
 
 \subsection*{Design}
 \begin{itemize}
-    \item For the trie implementation, I will primarily just be converting the C++ code to C code, which shouldn't require much designing.  I will, however, specialize it to use an int for the ASN rather than keeping it generalized, and make it useable by multiple threads/processes at once by adding locking; a node and its children will be recursively locked for reading and writing while any write is being performed on the node or one of its children.  This will allow reads and writes in other portions of the trie to still be processed during a write.  UPDATE: No locking construct was necessary to allow concurrent access to the trie!  Both adding new nodes and editing nodes are atomic, so the data structure cannot be corrupted by concurrent writes.  At worst, two new nodes will be allocated, but only one will be used; the other one will be overwritten.  This is no worse than if it had simply come after and not been added because it was a duplicate.  Even in the event that a node is read after it is created but before it has finished being updated with the data being written, no errors occur because the reader does not use the node's value unless "populated" is true, and "populated" status is set true only after the node is finished being updated.  At worst, a query that is specified to occur after an entry will return the old value rather than the new value, which could happen anyway, even with locking; one cannot rely on which workers will run first.  For example, an entry worker can read a line and then have a query worker scheduled immediately after it, reading the value before the entry worker even had a chance to lock it.
-    \item For the main program, I will simply read the input in line-by-line with scanf(), then either add to the trie or perform a lookup depending on the operation specified.  UPDATE: gets() was used instead of scanf to read in lines; sscanf() was then used to parse the lines where necessary.
+    \item For the trie implementation, I will primarily just be converting the C++ code to C code, which shouldn't require much designing.  I will, however, specialize it to use an int for the ASN rather than keeping it generalized, and make it useable by multiple threads/processes at once by adding locking; a node and its children will be recursively locked for reading and writing while any write is being performed on the node or one of its children.  This will allow reads and writes in other portions of the trie to still be processed during a write.  Update: No locking construct was necessary to allow concurrent access to the trie!  Both adding new nodes and editing nodes are atomic, so the data structure cannot be corrupted by concurrent writes.  At worst, two new nodes will be allocated, but only one will be used; the other one will be overwritten.  This is no worse than if it had simply come after and not been added because it was a duplicate.  Even in the event that a node is read after it is created but before it has finished being updated with the data being written, no errors occur because the reader does not use the node's value unless "populated" is true, and "populated" status is set true only after the node is finished being updated.  At worst, a query that is specified to occur after an entry will return the old value rather than the new value, which could happen anyway, even with locking; one cannot rely on which workers will run first.  For example, an entry worker can read a line and then have a query worker scheduled immediately after it, reading the value before the entry worker even had a chance to lock it.
+    \item For the main program, I will simply read the input in line-by-line with scanf(), then either add to the trie or perform a lookup depending on the operation specified.  Update: gets() was used instead of scanf to read in lines; sscanf() was then used to parse the lines where necessary.
     \item To decide which process gets to read from the input next in the multiprocess version, a semaphore will be created and shared between them; all processes constantly check to see if the semaphore is unlocked while they are not currently doing work, and if it is, the process will lock it, read a line of input, and unlock it again.
-    \item To decide which thread gets to read from the input next in the multithreaded version, a mutex with a condition variable will be created and shared between them; all threads wait for the mutex to be unlocked while they are not currently doing work, and once it is, the thread will lock it, read a line of input, and unlock it again.  This approach will likely be much faster than the multiprocess version's, because threads waiting for an unlock do not have to constantly check if it is available.  UPDATE: No condition variable was necessary because the workers will simply block on unlocking the stdin mutex.  At this point, I'm not even sure what the purpose of condition variables is.
+    \item To decide which thread gets to read from the input next in the multithreaded version, a mutex with a condition variable will be created and shared between them; all threads wait for the mutex to be unlocked while they are not currently doing work, and once it is, the thread will lock it, read a line of input, and unlock it again.  This approach will likely be much faster than the multiprocess version's, because threads waiting for an unlock do not have to constantly check if it is available.  Update: No condition variable was necessary because the workers will simply block on unlocking the stdin mutex.  At this point, I'm not even sure what the purpose of condition variables is.
     \item If a thread/process reads an EOF, it will set an "done" flag that all thread/processes check before attempting to read; if it is set, the thread/process will exit.  This will prevent the other threads/processes from blocking on an empty input, and threads/processes will only terminate once they have finished what they were already working on.
 \end{itemize}
 
 \subsection*{Work Log}
 \begin{verbatim}
-\end{verbatim}
+commit b7454ae0c7e5bbb83b5d3f0979edd62010e4baba
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 23:46:08 2014 -0800
 
+    commit timings graphs
+
+commit 4202826988c049a958e734fcbc414215d1a57db9
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 23:30:53 2014 -0800
+
+    add timings files
+
+commit 4251215a841ff07f8954c0316b7407907b211db0
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 23:05:34 2014 -0800
+
+    fix trie database output for prouter
+
+commit 204b10105049ee2bbcfa113fb5ca330efc935909
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 22:55:36 2014 -0800
+
+    done with prouter
+
+commit 2e93e44fd2efc745056a2dab573f2b0dc1bc5312
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 20:43:58 2014 -0800
+
+    trouter can now read a trie file for initialization
+
+commit 51b97c0a02189def5ee5dedc26df1082ab1e764b
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 20:20:44 2014 -0800
+
+    trouter can now print its trie structure to a file, still need to be able to read it back in
+
+commit 17323336325cd307b7ae1dbb684be43fd2289a9f
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 18:38:57 2014 -0800
+
+    turning off compilar optimizations because it causes segfaults?
+
+commit 2e32c19559536ac5be0762d78a668b99f2b45fe0
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 18:11:03 2014 -0800
+
+    Updating writeup with design changes so far
+
+commit 8c667d77af77767008ee9d2550a7ca005a22f79e
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 17:32:17 2014 -0800
+
+    fix all debug statements in trouter to show thread id
+
+commit 8d81374a5738b04ed63e70bfba7cd8c6e33e4c59
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 17:08:14 2014 -0800
+
+    committing test3.txt; like test2.txt, but does a query after every entry
+
+commit 1a905b076f35036f5b487baf26c7d01bc528e182
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 16:52:32 2014 -0800
+
+    Combining trienode code into trouter since it will be custom
+
+commit 0c45b1a8d6e3701c2e49782c134c596094251a10
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 16:45:49 2014 -0800
+
+    debugging for multithreading trouter
+
+commit b5c10bb47af4fa2ed39adf8382def6c747bc016a
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 16:30:35 2014 -0800
+
+    debugging trouter and trienode, looks to be working properly, still need to do concurrency
+
+commit 0e9e3ed803dd1eba772c96263035873998e12b8f
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 16:28:51 2014 -0800
+
+    commiting test1.txt; used for smaller testing
+
+commit 3cc4b63d74605e5b3c02d78e177beadef7ea1715
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 15:44:18 2014 -0800
+
+    adding ! to test file, renaming to test2.txt
+
+commit 4604ec47d0f36384f0d52f4a0696c49cc33ff93f
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 15:40:55 2014 -0800
+
+    commiting test file ip_asn.txt
+
+commit 1d6b7d2fb964d761524f183f8fb2708673c9d06d
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 15:40:12 2014 -0800
+
+    done converting trie implementation to C, still needs testing
+
+commit 7b4f743d2244ce78b376127cdc312f4f6237f4f3
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 15:39:49 2014 -0800
+
+    fix minor syntax error in trouter
+
+commit 794b9071d0bfbc3cc88ca922f9000d6f2f458cbf
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 15:01:35 2014 -0800
+
+    done with trouter, still needs testing, still needs trie to be implemented
+
+commit fd2bb6d753e097118bb04c0723f46338a2def182
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 02:26:34 2014 -0800
+
+    Done implementing trouter worker code, still needs testing and query/entry functions written
+
+commit 11eb92c67b1c1e8fd03a47342c0314db143ec08b
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 5 01:01:54 2014 -0800
+
+    trouter has basic threading, helper functions converted to C, still needs testing, still needs main logic
+
+commit cc87b69ef2ca9b0edfd2a00fbb4fb676a434e58b
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Tue Mar 4 21:23:50 2014 -0800
+
+    Initial commit of assignment 4; Done with design in writeup
+\end{verbatim}
 \subsection*{Challenges Overcame}
 \begin{itemize}
+    \item Converting the C++ to C was difficult, especially since I didn't know much C++.
+    \item Converting the threaded version to the process version was difficult because of the need for shared memory objects.
+    \item Learning how to use gnuplot was quite difficult until I found the right guide.
 \end{itemize}
 
 \subsection*{Questions}
 \begin{enumerate}
+    \item The main point of this assignment was to learn the basics of managing multiple threads and processes in Linux, as well the differences between their speeds and implementations.  The secondary purpose of this assignment was to learn how to use mutexes and semaphores to perform locking.
+    \item I tested both trouter and prouter with many different types, orders, and amounts of entries and queries, while using multiple different numbers of workers, and while testing input and output files as well.
+    \item I learned how to use threads, primarily.  I mostly already knew how to deal with processes.  I also learned how to use mutexes and semaphores, as well as how to create, map, and use shared memory objects, which is something  have never done before.
+    \item With processes, more seems better to a point, after which returns diminish.  With threads, there is a similar pattern, except that after a point, the processing time actually increases, eventually even past the time it takesfor it to complete with only one thread!  Time always increases with increased numbers of entries and queries.
 \end{enumerate}
 
 \end{document}
