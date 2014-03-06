@@ -25,7 +25,7 @@ int w = 1; // Number of workers to use
 int *curw; // Number of workers currently running
 int wid = 0; // Worker ID
 FILE *ins = NULL; // Stream to write trie to at end
-FILE *outs = NULL; // Stream to read trie from at start
+int outfd = -1; // File decriptor to read trie from at start
 sem_t *sem; // Semaphore for stdin
 int *done; // Whether we are done reading from stdin (have we reached EOF?)
 int *numnodes; // How many trie nodes we have allocated so far
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
                 break;
             case 'o':
                 if(sscanf(optarg, "%s", outfile) != 1) usage();
-                if((outs = fopen(outfile, "w")) == NULL) error("Could not open output file");
+                if((outfd = open(outfile, O_WRONLY | O_CREAT, 0664)) == NULL) error("Could not open output file");
                 break;
             default: // '?'
                 usage();
@@ -132,7 +132,7 @@ void *worker(void *arg)
             if(curw[0] == 1){
                 sem_destroy(sem);
                 shm_unlink("prouter");
-                if(outs != NULL) print_trie(trie); // Print the trie if we are the last worker
+                if(outfd != -1) print_trie(trie); // Print the trie if we are the last worker
             }
             curw[0]--;
             if(DEBUG) printf("[Worker %d] Previous worker got EOF; terminating\n", wid);
@@ -148,7 +148,7 @@ void *worker(void *arg)
             if(curw[0] == 1){
                 sem_destroy(sem);
                 shm_unlink("prouter");
-                if(outs != NULL) print_trie(trie); // Print the trie if we are the last worker
+                if(outfd != -1) print_trie(trie); // Print the trie if we are the last worker
             }
             curw[0]--;
             if(DEBUG) printf("[Worker %d] Got EOF, terminating\n", wid);
@@ -393,6 +393,7 @@ void __recursePrint_trie(struct trienode *root, char *prefix)
     if(root->populated){
         char *printprefix = prefix;
         if(strcmp(prefix, "") == 0) printprefix = "-";
+        FILE *outs = fdopen(outfd, "w");
         fprintf(outs, "%d\t%s\n", root->ASN, printprefix); // It's backwards because it prints prettier
     }
 
