@@ -64,6 +64,16 @@ int main(int argc, char *argv[])
     /* Initialize trie */
     trie = init_trienode();
 
+    /* Populate tree from database, if one is given */
+    if(ins != NULL){
+        int ASN;
+        char prefix[32+1];
+        while(fscanf(ins, "%d %s\n", &ASN, prefix) > 0){ // Read each line
+            if(DEBUG) printf("[Main] Adding entry to trie with ASN %d and prefix %s\n", ASN, prefix);
+            insert(trie, prefix, ASN);
+        }
+    }
+
     /* Spin off w - 1 workers */
     if(DEBUG) printf("[Main] Creating %d workers\n", w);
     for(int i = 0; i < w - 1; i++){
@@ -330,7 +340,11 @@ void __recursePrint_trie(struct trienode *root, char *prefix)
     if(DEBUG > 1) printf("[Worker %d] Recursive print: checking node at prefix %s\n", (int) pthread_self(), prefix);
 
     /* If we have an ASN, print it with our path so far (the prefix) */
-    if(root->populated) fprintf(outs, "%d %s\n", root->ASN, prefix); // It's backwards because it's easier to scan if there is no prefix
+    if(root->populated){
+        char *printprefix = prefix;
+        if(strcmp(prefix, "") == 0) printprefix = "-";
+        fprintf(outs, "%d\t%s\n", root->ASN, printprefix); // It's backwards because it prints prettier
+    }
 
     if(root->zero != NULL){
         char prefix0[33];
