@@ -17,3 +17,5 @@ void insert(struct trienode *, char *, int);
 int search(struct trienode *, char *);
 void __recurseInsert(struct trienode *, char *, int);
 int __recurseSearch(struct trienode *, char *, int *);
+void print_trie(struct trienode *);
+void __recursePrint_trie(struct trienode *, char *);

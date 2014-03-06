@@ -15,9 +15,14 @@
 #include <pthread.h>
 #include "trouter.h"
 
+#define MAX_PATH_LEN 256
+
 char *name; // Name of program
 int DEBUG = 0; // Whether we are in debug mode
 int w = 1; // Number of workers to use
+int curw = 1; // Number of workers currently running
+FILE *ins = NULL; // Stream to write trie to at end
+FILE *outs = NULL; // Stream to read trie from at start
 pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER; // Mutex for stdin
 int done = 0; // Whether we are done reading from stdin (have we reached EOF?)
 struct trienode *trie; // Our trie for storing ASNs
@@ -29,13 +34,23 @@ int main(int argc, char *argv[])
 
     /* Parse flags */
     int opt;
-    while((opt = getopt(argc, argv, "w:d")) != -1){
+    char infile[MAX_PATH_LEN];
+    char outfile[MAX_PATH_LEN];
+    while((opt = getopt(argc, argv, "w:di:o:")) != -1){
         switch(opt){
             case 'w':
                 if(sscanf(optarg, "%d", &w) != 1) usage();
                 break;
             case 'd':
                 DEBUG++;
+                break;
+            case 'i':
+                if(sscanf(optarg, "%s", infile) != 1) usage();
+                if((ins = fopen(infile, "r")) == NULL) error("Could not open input file");
+                break;
+            case 'o':
+                if(sscanf(optarg, "%s", outfile) != 1) usage();
+                if((outs = fopen(outfile, "w")) == NULL) error("Could not open output file");
                 break;
             default: // '?'
                 usage();
@@ -52,6 +67,7 @@ int main(int argc, char *argv[])
     /* Spin off w - 1 workers */
     if(DEBUG) printf("[Main] Creating %d workers\n", w);
     for(int i = 0; i < w - 1; i++){
+        curw++;
         pthread_t id;
         pthread_create(&id, NULL, worker, NULL);
     }
@@ -71,15 +87,19 @@ void *worker(void *arg)
         /* Read a line from stdin, terminating if nothing is left */
         pthread_mutex_lock(&mtx);
         if(done){ // If a previous worker got EOF, there's nothing left for us; terminate
-            if(DEBUG) printf("[Worker %d] Previous worker got EOF; terminating\n", (int) pthread_self());
             pthread_mutex_unlock(&mtx);
+            if(curw == 1 && outs != NULL) print_trie(trie); // Print the trie if we are the last worker
+            curw--;
+            if(DEBUG) printf("[Worker %d] Previous worker got EOF; terminating\n", (int) pthread_self());
             pthread_exit(NULL);
         }
 
         if(gets(line) == NULL){ // If we got EOF, notify other workers, then terminate
-            done = 1;
-            if(DEBUG) printf("[Worker %d] Got EOF, terminating\n", (int) pthread_self());
             pthread_mutex_unlock(&mtx);
+            done = 1;
+            if(curw == 1 && outs != NULL) print_trie(trie); // Print the trie if we are the last worker
+            curw--;
+            if(DEBUG) printf("[Worker %d] Got EOF, terminating\n", (int) pthread_self());
             pthread_exit(NULL);
         }
         pthread_mutex_unlock(&mtx);
@@ -186,7 +206,7 @@ char *prefix_to_binary(char *prefix)
 /* Print usage info and exit */
 void usage()
 {
-    printf("Usage: %s [-t scorer_threads] [-o outfile] [-d]... FILE...\n", name);
+    printf("Usage: %s [-w workers] [-i infile] [-o outfile] [-d]...\n", name);
     exit(EXIT_FAILURE);
 }
 
@@ -218,6 +238,7 @@ void insert(struct trienode *root, char *key, int value)
     else{
         if(DEBUG > 1) printf("[Worker %d] Insert: key length is 0, placing ASN %d at root\n", (int) pthread_self(), value);
         root->ASN = value;
+        root->populated = 1;
     }
 }
 
@@ -294,5 +315,34 @@ int __recurseSearch(struct trienode *root, char *key, int *valuebuf)
             return *valuebuf;
         }
         else return __recurseSearch(root->one, &key[1], valuebuf);
+    }
+}
+
+/* Prints the trie */
+void print_trie(struct trienode *root)
+{
+    char *prefix = ""; //Max length of 32-bit int in binary plus null terminator
+    __recursePrint_trie(root, prefix);
+}
+
+void __recursePrint_trie(struct trienode *root, char *prefix)
+{
+    if(DEBUG > 1) printf("[Worker %d] Recursive print: checking node at prefix %s\n", (int) pthread_self(), prefix);
+
+    /* If we have an ASN, print it with our path so far (the prefix) */
+    if(root->populated) fprintf(outs, "%d %s\n", root->ASN, prefix); // It's backwards because it's easier to scan if there is no prefix
+
+    if(root->zero != NULL){
+        char prefix0[33];
+        strcpy(prefix0, prefix);
+        strcat(prefix0, "0");
+        __recursePrint_trie(root->zero, prefix0);
+    }
+
+    if(root->one != NULL){
+        char prefix1[33];
+        strcpy(prefix1, prefix);
+        strcat(prefix1, "1");
+        __recursePrint_trie(root->one, prefix1);
     }
 }
