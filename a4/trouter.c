@@ -100,15 +100,24 @@ int query(char *ip)
 {
     /* Convert ip from dotted decimal format to binary format */
     char cidrip[strlen(ip)+3];
+    strcpy(cidrip, ip);
     strcat(cidrip, "/32"); // We need to add a /32 at the end of the ip for the converter to work
 
-    return search(trie, prefix_to_binary(cidrip));
+    char *binip = prefix_to_binary(cidrip);
+
+    if(DEBUG) printf("Query: IP is %s, CIDR is %s, binary is %s\n", ip, cidrip, binip);
+
+    return search(trie, binip);
 }
 
 /* Adds the given ASN to the trie for the given prefix */
 void entry(char *prefix, int ASN)
 {
-    insert(trie, prefix_to_binary(prefix), ASN);
+    char *binprefix = prefix_to_binary(prefix);
+
+    if(DEBUG) printf("Entry: CIDR is %s, binary is %s\n", prefix, binprefix);
+
+    insert(trie, binprefix, ASN);
 }
 
 /* Converts an 8-bit integer to binary in string format */
