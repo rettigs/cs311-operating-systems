@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
     trie = init_trienode();
 
     /* Spin off w - 1 workers */
-    if(DEBUG) printf("Creating %d workers\n", w);
+    if(DEBUG) printf("[Main] Creating %d workers\n", w);
     for(int i = 0; i < w - 1; i++){
         pthread_t id;
         pthread_create(&id, NULL, worker, NULL);
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 /* Read instructions from stdin, execute them, and exit on EOF */
 void *worker(void *arg)
 {
-    if(DEBUG) printf("Worker started\n");
+    if(DEBUG) printf("[Worker %d] Started\n", pthread_self());
 
     char line[1+3+1+3+1+3+1+3+1+2+1+10]; // Max length of command + CIDR address + space + 32-bit decimal int
     
@@ -72,13 +72,15 @@ void *worker(void *arg)
         /* Read a line from stdin, terminating if nothing is left */
         pthread_mutex_lock(&mtx);
         if(done){ // If a previous worker got EOF, there's nothing left for us; terminate
-            if(DEBUG) printf("Worker terminating\n");
+            if(DEBUG) printf("[Worker %d] Previous worker got EOF; terminating\n", pthread_self());
+            pthread_mutex_unlock(&mtx);
             pthread_exit(NULL);
         }
 
         if(gets(line) == NULL){ // If we got EOF, notify other workers, then terminate
             done = 1;
-            if(DEBUG) printf("Worker terminating\n");
+            if(DEBUG) printf("[Worker %d] Got EOF, terminating\n", pthread_self());
+            pthread_mutex_unlock(&mtx);
             pthread_exit(NULL);
         }
         pthread_mutex_unlock(&mtx);
@@ -105,7 +107,7 @@ int query(char *ip)
 
     char *binip = prefix_to_binary(cidrip);
 
-    if(DEBUG) printf("Query: IP is %s, CIDR is %s, binary is %s\n", ip, cidrip, binip);
+    if(DEBUG) printf("[Worker %d] Query: IP is %s, CIDR is %s, binary is %s\n", pthread_self(), ip, cidrip, binip);
 
     return search(trie, binip);
 }
@@ -115,7 +117,7 @@ void entry(char *prefix, int ASN)
 {
     char *binprefix = prefix_to_binary(prefix);
 
-    if(DEBUG) printf("Entry: CIDR is %s, binary is %s\n", prefix, binprefix);
+    if(DEBUG) printf("[Worker %d] Entry: CIDR is %s, binary is %s\n", pthread_self(), prefix, binprefix);
 
     insert(trie, binprefix, ASN);
 }
