@@ -71,7 +71,33 @@
 
 \subsection*{Design}
 \begin{itemize}
-    \item
+    \item ip2asn.c will use the threaded version of the program from assignment 4 as its base, but rather than creating a predetermined number of workers which all read from stdin, they will be created whenever a new client connects to service that client, and will terminate when the client disconnects.
+    \item ip2asn.c will also be modified to record how many unique hosts have connected, how many queries have been answered, and how many prefixes are stored.
+    \item update.py and ip2asn.py will communicate with ip2asn.c via XML, with updates and queries taking the following forms (sans whitespace):
+    \begin{verbatim}
+        <entry>
+            <cidr>1.2.3.4/5</cidr>
+            <asn>6789</asn>
+        </entry>
+
+        <query>
+            <ip>1.2.3.4</ip>
+        </query>
+
+        <answer>
+            <asn>6789</asn>
+        </answer>
+
+        <stats></stats>
+
+        <stats>
+            <hosts>123</hosts>
+            <queries>456</queries>
+            <prefixes>789</prefixes>
+        </stats>
+
+        <terminate></terminate>
+    \end{verbatim}
 \end{itemize}
 
 \subsection*{Work Log}
