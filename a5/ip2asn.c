@@ -3,7 +3,9 @@
 #define _BSD_SOURCE
 
 #include <sys/types.h>
-#include <sys/wait.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <stdio.h>
@@ -13,36 +15,59 @@
 #include <string.h>
 #include <ctype.h>
 #include <pthread.h>
-#include "trouter.h"
+#include "ip2asn.h"
 
+#define MAX_IP_LEN 16
 #define MAX_PATH_LEN 256
+#define MAX_WORKERS 2
+#define BACKLOG 1024
+#define DEFAULT_IP INADDR_ANY
+#define DEFAULT_PORT 54321
 
 char *name; // Name of program
 int DEBUG = 0; // Whether we are in debug mode
-int w = 1; // Number of workers to use
-int curw = 1; // Number of workers currently running
+int curw = 0; // Number of workers currently running
 FILE *ins = NULL; // Stream to write trie to at end
 FILE *outs = NULL; // Stream to read trie from at start
-pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER; // Mutex for stdin
 int done = 0; // Whether we are done reading from stdin (have we reached EOF?)
 struct trienode *trie; // Our trie for storing ASNs
+struct sockaddr_in address; // Our network address
+char ipstring[MAX_IP_LEN]; // Our IP in string format
 
-/* Do BGP stuff with a trie using multiple threads */
+/* Start an IP to ASN translation service server */
 int main(int argc, char *argv[])
 {
     name = argv[0];
 
+    /* Register signal handler so we terminate cleanly */
+    struct sigaction sa;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sa.sa_handler = handler;
+    if(sigaction(SIGINT, &sa, NULL) == -1) error("Could not register signal handler");
+    if(sigaction(SIGQUIT, &sa, NULL) == -1) error("Could not register signal handler");
+    if(sigaction(SIGHUP, &sa, NULL) == -1) error("Could not register signal handler");
+
+    /* Initialize network address */
+    memset(&address, 0, sizeof(struct sockaddr_in));
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = htonl(DEFAULT_IP);
+    address.sin_port = htons(DEFAULT_PORT);
+
     /* Parse flags */
     int opt;
+    short port = -1;
     char infile[MAX_PATH_LEN];
     char outfile[MAX_PATH_LEN];
-    while((opt = getopt(argc, argv, "w:di:o:")) != -1){
+    while((opt = getopt(argc, argv, "da:i:o:h")) != -1){
         switch(opt){
-            case 'w':
-                if(sscanf(optarg, "%d", &w) != 1) usage();
-                break;
             case 'd':
                 DEBUG++;
+                break;
+            case 'a':
+                if(sscanf(optarg, "%s:%h", &ipstring, &port) < 1) usage();
+                inet_pton(AF_INET, ipstring, address.sin_addr.s_addr);
+                if(port > 0) address.sin_port = htons(port);
                 break;
             case 'i':
                 if(sscanf(optarg, "%s", infile) != 1) usage();
@@ -52,82 +77,78 @@ int main(int argc, char *argv[])
                 if(sscanf(optarg, "%s", outfile) != 1) usage();
                 if((outs = fopen(outfile, "w")) == NULL) error("Could not open output file");
                 break;
+            case 'h':
             default: // '?'
                 usage();
         }
-    }
-    if(w < 1){
-        printf("Must specify at least 1 worker\n");
-        exit(EXIT_FAILURE);
     }
 
     /* Initialize trie */
     trie = init_trienode();
 
-    /* Populate tree from database, if one is given */
+    /* Populate trie from database, if one is given */
     if(ins != NULL){
+        if(DEBUG) printf("[Main] Importing database\n");
         int ASN;
         char prefix[32+1];
         while(fscanf(ins, "%d %s\n", &ASN, prefix) > 0){ // Read each line
-            if(DEBUG) printf("[Main] Adding entry to trie with ASN %d and prefix %s\n", ASN, prefix);
+            if(DEBUG > 1) printf("[Main] Importing entry with ASN: %d,\tprefix: %s\n", ASN, prefix);
             insert(trie, prefix, ASN);
         }
     }
 
-    /* Spin off w - 1 workers */
-    if(DEBUG) printf("[Main] Creating %d workers\n", w);
-    for(int i = 0; i < w - 1; i++){
-        curw++;
+    /* Bind to address and start listening for connections */
+    int listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    if(DEBUG) printf("[Main] Binding to address %s:%d\n", ASN, prefix);
+    if(bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) != 0) error("Could not bind to address");
+    listen(listenfd, BACKLOG);
+
+    /* Create array to store each worker's id and client socket fd */
+    struct workerarg worker[MAX_WORKERS];
+
+    /* Keep accepting connections forever, spinning off new worker threads to handle each one */
+    for(;;){
+
+        /* Accept the connection and get ready to spin off a worker thread */
+        if(DEBUG) printf("[Main] Spinning off worker %d\n", curw);
+        struct sockaddr_in clientaddress;
+        worker[curw].id = curw;
+        worker[curw].fd = accept(listenfd, (struct sockaddr *) &clientaddress, &sizeof(struct sockaddr_in));
+        if(worker[curw].fd == -1) error("Could not accept connection");
+
+        /* Print debug information about the connection */
+        char clientip[MAX_IP_LEN];
+        net_ntop(AF_INET, clientaddress.sin_addr.s_addr, clientip, sizeof(*clientip));
+        struct sockaddr acceptaddress;
+        getsockname(worker[curw].fd, acceptaddress, sizeof(acceptaddress));
+        if(DEBUG) printf("[Main] Worker %d will be servicing client %s\n", curw, clientip, acceptaddress.sin_port);
+        
+        /* Spin off the worker thread */
         pthread_t id;
-        pthread_create(&id, NULL, worker, NULL);
+        pthread_create(&id, NULL, worker, &client[curw]);
+        curw++;
     }
 
-    /* Become a worker */
-    worker(NULL);
+    exit(EXIT_SUCCESS);
 }
 
-/* Read instructions from stdin, execute them, and exit on EOF */
-void *worker(void *arg)
+/* Perform commands given by the client */
+void *worker(void *worker)
 {
-    if(DEBUG) printf("[Worker %d] Started\n", (int) pthread_self());
+    if(DEBUG) printf("[Worker %d] Started\n", worker->id);
 
-    char line[1+3+1+3+1+3+1+3+1+2+1+10]; // Max length of command + CIDR address + space + 32-bit decimal int
-    
+    /* Open stream for socket */
+    FILE *stream = fdopen(worker->fd, "r+");
+
+    /* Keep reading XML tags forever */
     for(;;){
-        /* Read a line from stdin, terminating if nothing is left */
-        pthread_mutex_lock(&mtx);
-        if(done){ // If a previous worker got EOF, there's nothing left for us; terminate
-            pthread_mutex_unlock(&mtx);
-            if(curw == 1 && outs != NULL) print_trie(trie); // Print the trie if we are the last worker
-            curw--;
-            if(DEBUG) printf("[Worker %d] Previous worker got EOF; terminating\n", (int) pthread_self());
-            pthread_exit(NULL);
-        }
-
-        if(gets(line) == NULL){ // If we got EOF, notify other workers, then terminate
-            pthread_mutex_unlock(&mtx);
-            done = 1;
-            if(curw == 1 && outs != NULL) print_trie(trie); // Print the trie if we are the last worker
-            curw--;
-            if(DEBUG) printf("[Worker %d] Got EOF, terminating\n", (int) pthread_self());
-            pthread_exit(NULL);
-        }
-        pthread_mutex_unlock(&mtx);
-
-        /* Process that line */
-        if(line[0] == '?'){ // Query
-            printf("The ASN for %s is: %d\n", &line[1], query(&line[1]));
-        }else if(line[0] == '!'){ // Entry
-            char prefix[3+1+3+1+3+1+3+1+2]; // Max length of a CIDR address
-            int ASN;
-            sscanf(&line[1], "%s %d", (char *) &prefix, &ASN);
-            entry((char *)&prefix, ASN);
-        }
+        /* Read an XML start tag and perform the requested operation */
+        if(fscanf(stream, "") == 1)
     }
 }
 
 /* Looks up an IP address in the trie and returns the corresponding ASN */
-int query(char *ip)
+int query(int wid, char *ip)
 {
     /* Convert ip from dotted decimal format to binary format */
     char cidrip[strlen(ip)+3];
@@ -136,17 +157,17 @@ int query(char *ip)
 
     char *binip = prefix_to_binary(cidrip);
 
-    if(DEBUG) printf("[Worker %d] Query: IP is %s, CIDR is %s, binary is %s\n", (int) pthread_self(), ip, cidrip, binip);
+    if(DEBUG) printf("[Worker %d] Query: IP is %s, CIDR is %s, binary is %s\n", wid, ip, cidrip, binip);
 
     return search(trie, binip);
 }
 
 /* Adds the given ASN to the trie for the given prefix */
-void entry(char *prefix, int ASN)
+void entry(int wid, char *prefix, int ASN)
 {
     char *binprefix = prefix_to_binary(prefix);
 
-    if(DEBUG) printf("[Worker %d] Entry: CIDR is %s, binary is %s\n", (int) pthread_self(), prefix, binprefix);
+    if(DEBUG) printf("[Worker %d] Entry: CIDR is %s, binary is %s\n", wid, prefix, binprefix);
 
     insert(trie, binprefix, ASN);
 }
@@ -213,10 +234,19 @@ char *prefix_to_binary(char *prefix)
 	return binary_string;
 }
 
+/* Cleanly handle termination signals */
+void handler(int sig)
+{
+    printf("[Handler] Saving database\n");
+    if(outs != NULL) print_trie(trie); // Save the database before terminating
+    printf("[Handler] Terminating cleanly\n");
+    exit(EXIT_SUCCESS);
+}
+
 /* Print usage info and exit */
 void usage()
 {
-    printf("Usage: %s [-w workers] [-i infile] [-o outfile] [-d]...\n", name);
+    printf("Usage: %s [-h] [-a ip[:port]] [-i infile] [-o outfile] [-d]...\n", name);
     exit(EXIT_FAILURE);
 }
 
@@ -242,11 +272,11 @@ struct trienode *init_trienode()
 
 /* Inserts the given value into the trie at the specified location.
    Key is binary integer of no more than 32 bits, in string format */
-void insert(struct trienode *root, char *key, int value)
+void insert(int wid, struct trienode *root, char *key, int value)
 {
-    if(strlen(key) > 0) __recurseInsert(root, key, value);
+    if(strlen(key) > 0) __recurseInsert(wid, root, key, value);
     else{
-        if(DEBUG > 1) printf("[Worker %d] Insert: key length is 0, placing ASN %d at root\n", (int) pthread_self(), value);
+        if(DEBUG > 1) printf("[Worker %d] Insert: key length is 0, placing ASN %d at root\n", wid, value);
         root->ASN = value;
         root->populated = 1;
     }
@@ -257,74 +287,74 @@ void insert(struct trienode *root, char *key, int value)
 int search(struct trienode *root, char *key)
 {
     int valuebuf = root->ASN;
-    return __recurseSearch(root, key, &valuebuf);
+    return __recurseSearch(wid, root, key, &valuebuf);
 }
 
-void __recurseInsert(struct trienode *root, char *key, int value)
+void __recurseInsert(int wid, struct trienode *root, char *key, int value)
 {
     // Root cannot be null
     char digit = key[0];
 
-    if(DEBUG > 1) printf("[Worker %d] Recursive insert: started, digit is %c, key is %s\n", (int) pthread_self(), digit, key);
+    if(DEBUG > 1) printf("[Worker %d] Recursive insert: started, digit is %c, key is %s\n", wid, digit, key);
 
     if(strlen(key) <= 0){
         // We have hit the bottom. We should shove our value at this node.
         if(!root->populated){
             root->ASN = value;
             root->populated = 1;
-        }else if(DEBUG) printf("[Worker %d] Recursive insert: duplicate assignment; node already contains ASN %d; not adding %d\n", (int) pthread_self(), root->ASN, value);
+        }else if(DEBUG) printf("[Worker %d] Recursive insert: duplicate assignment; node already contains ASN %d; not adding %d\n", wid, root->ASN, value);
         return;
     }
 
     if(digit == '0'){
         if(root->zero == NULL){
-            if(DEBUG > 1) printf("[Worker %d] Recursive insert: adding 'zero' node for ASN %d at %s\n", (int) pthread_self(), value, key);
+            if(DEBUG > 1) printf("[Worker %d] Recursive insert: adding 'zero' node for ASN %d at %s\n", wid, value, key);
             root->zero = init_trienode();
         }
-        __recurseInsert(root->zero, &key[1], value);
+        __recurseInsert(wid, root->zero, &key[1], value);
     }else{
         if(root->one == NULL){
-            if(DEBUG > 1) printf("[Worker %d] Recursive insert: adding 'one' node for ASN %d at %s\n", (int) pthread_self(), value, key);
+            if(DEBUG > 1) printf("[Worker %d] Recursive insert: adding 'one' node for ASN %d at %s\n", wid, value, key);
             root->one = init_trienode();
         }
-        __recurseInsert(root->one, &key[1], value);
+        __recurseInsert(wid, root->one, &key[1], value);
     }
 }
 
-int __recurseSearch(struct trienode *root, char *key, int *valuebuf)
+int __recurseSearch(int wid, struct trienode *root, char *key, int *valuebuf)
 {
     char digit = key[0];
 
-    if(DEBUG > 1) printf("[Worker %d] Recursive search: started, digit is %c, key is %s\n", (int) pthread_self(), digit, key);
+    if(DEBUG > 1) printf("[Worker %d] Recursive search: started, digit is %c, key is %s\n", wid, digit, key);
 
     if(root == NULL){
-        if(DEBUG > 1) printf("[Worker %d] Recursive search: root is null at key %s\n", (int) pthread_self(), key);
+        if(DEBUG > 1) printf("[Worker %d] Recursive search: root is null at key %s\n", wid, key);
         return *valuebuf;
     }
 
     if(root->populated){
-        if(DEBUG > 1) printf("[Worker %d] Recursive search: root is populated with ASN %d at key %s\n", (int) pthread_self(), root->ASN, key);
+        if(DEBUG > 1) printf("[Worker %d] Recursive search: root is populated with ASN %d at key %s\n", wid, root->ASN, key);
         valuebuf = &root->ASN;
     }
 
     if(strlen(key) <= 0){
         // We're done!
-        if(DEBUG > 1) printf("[Worker %d] Recursive search: key exhausted, returning ASN %d\n", (int) pthread_self(), root->ASN);
+        if(DEBUG > 1) printf("[Worker %d] Recursive search: key exhausted, returning ASN %d\n", wid, root->ASN);
         return *valuebuf;
     }
 
     if(digit == '0'){
         if(root->zero == NULL){
-            if(DEBUG > 1) printf("[Worker %d] Recursive search: node at key %s has no 'zero' child, returning ASN %d\n", (int) pthread_self(), key, root->ASN);
+            if(DEBUG > 1) printf("[Worker %d] Recursive search: node at key %s has no 'zero' child, returning ASN %d\n", wid, key, root->ASN);
             return *valuebuf;
         }
-        else return __recurseSearch(root->zero, &key[1], valuebuf);
+        else return __recurseSearch(wid, root->zero, &key[1], valuebuf);
     }else{
         if(root->one == NULL){
-            if(DEBUG > 1) printf("[Worker %d] Recursive search: node at key %s has no 'one' child, returning ASN %d\n", (int) pthread_self(), key, root->ASN);
+            if(DEBUG > 1) printf("[Worker %d] Recursive search: node at key %s has no 'one' child, returning ASN %d\n", wid, key, root->ASN);
             return *valuebuf;
         }
-        else return __recurseSearch(root->one, &key[1], valuebuf);
+        else return __recurseSearch(wid, root->one, &key[1], valuebuf);
     }
 }
 
@@ -337,7 +367,7 @@ void print_trie(struct trienode *root)
 
 void __recursePrint_trie(struct trienode *root, char *prefix)
 {
-    if(DEBUG > 1) printf("[Worker %d] Recursive print: checking node at prefix %s\n", (int) pthread_self(), prefix);
+    if(DEBUG > 1) printf("[Handler] Recursive print: checking node at prefix %s\n", prefix);
 
     /* If we have an ASN, print it with our path so far (the prefix) */
     if(root->populated){

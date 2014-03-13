@@ -6,12 +6,10 @@ CC = gcc
 CFLAGS = -Wall -std=c99 -openmp -O0 -g -I.
 LDFLAGS = -lrt -lpthread -lm
 
-TARGET1 = trouter
-TARGET2 = prouter
+TARGET1 = ip2asn
 
 c:
 	${CC} ${CFLAGS} ${TARGET1}.c -o ${TARGET1} ${LDFLAGS}
-	${CC} ${CFLAGS} ${TARGET2}.c -o ${TARGET2} ${LDFLAGS}
 
 
 # Makes LaTeX into a PDF

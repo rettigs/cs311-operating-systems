@@ -5,17 +5,22 @@ struct trienode{
     struct trienode *one;
 };
 
+struct workerarg{
+    int id;
+    int fd;
+};
+
 void *worker(void *);
-int query(char *);
-void entry(char *, int);
+int query(int wid, char *);
+void entry(int wid, char *, int);
 char *dec2bin(int);
 char *prefix_to_binary(char *);
 void usage();
 void error(char *);
 struct trienode *init_trienode();
-void insert(struct trienode *, char *, int);
-int search(struct trienode *, char *);
-void __recurseInsert(struct trienode *, char *, int);
-int __recurseSearch(struct trienode *, char *, int *);
+void insert(int wid, struct trienode *, char *, int);
+int search(int wid, struct trienode *, char *);
+void __recurseInsert(int wid, struct trienode *, char *, int);
+int __recurseSearch(int wid, struct trienode *, char *, int *);
 void print_trie(struct trienode *);
 void __recursePrint_trie(struct trienode *, char *);
