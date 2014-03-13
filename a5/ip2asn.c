@@ -143,7 +143,14 @@ void *worker(void *worker)
     /* Keep reading XML tags forever */
     for(;;){
         /* Read an XML start tag and perform the requested operation */
-        if(fscanf(stream, "") == 1)
+        if      (fscanf(stream, "<query>") == 1) XMLquery(wid, stream);
+        else if (fscanf(stream, "<entry>") == 1) XMLentry(wid, stream);
+        else if (fscanf(stream, "<stats />") == 1) XMLstats(wid, stream);
+        else if (fscanf(stream, "<terminate />") == 1){
+            printf("[Worker %d] Got termination notice; sending termination signal\n", worker->id);
+            kill(0, SIGSTOP);
+            break;
+        }
     }
 }
 
@@ -160,6 +167,18 @@ int query(int wid, char *ip)
     if(DEBUG) printf("[Worker %d] Query: IP is %s, CIDR is %s, binary is %s\n", wid, ip, cidrip, binip);
 
     return search(trie, binip);
+}
+
+/* Handle an XML query */
+void XMLquery(int wid, FILE *stream){
+}
+
+/* Handle an XML entry */
+void XMLquery(int wid, FILE *stream){
+}
+
+/* Handle an XML stats request */
+void XMLquery(int wid, FILE *stream){
 }
 
 /* Adds the given ASN to the trie for the given prefix */

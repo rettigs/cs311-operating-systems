@@ -11,6 +11,9 @@ struct workerarg{
 };
 
 void *worker(void *);
+void XMLentry(int, FILE *);
+void XMLquery(int, FILE *);
+void XMLstats(int, FILE *);
 int query(int wid, char *);
 void entry(int wid, char *, int);
 char *dec2bin(int);
