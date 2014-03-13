@@ -39,7 +39,6 @@ FILE *outs = NULL; // Stream to read trie from at start
 int done = 0; // Whether we are done reading from stdin (have we reached EOF?)
 struct trienode *trie; // Our trie for storing ASNs
 struct sockaddr_in address; // Our network address
-char ipstring[MAX_IP_LEN]; // Our IP in string format
 struct hostnode *hosthash = NULL; // Hashmap to store unique client hosts
 int queries = 0; // Number of queries answered
 int prefixes = 0; // Number of prefixes stored
@@ -58,26 +57,26 @@ int main(int argc, char *argv[])
     if(sigaction(SIGQUIT, &sa, NULL) == -1) error("Could not register signal handler");
     if(sigaction(SIGHUP, &sa, NULL) == -1) error("Could not register signal handler");
 
-    /* Initialize network address */
-    memset(&address, 0, sizeof(struct sockaddr_in));
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = htonl(DEFAULT_IP);
-    address.sin_port = htons(DEFAULT_PORT);
-
     /* Parse flags */
     int opt;
-    int port = -1;
+    char rawip[MAX_IP_LEN]; // Our IP in dotted decimal string format
+    int ip = DEFAULT_IP; // Our IP in network byte ordered int format
+    unsigned short rawport = DEFAULT_PORT; // Our port in local format
+    unsigned short port = htons(DEFAULT_PORT); // Our port in network byte ordered format
     char infile[MAX_PATH_LEN];
     char outfile[MAX_PATH_LEN];
-    while((opt = getopt(argc, argv, "da:i:o:h")) != -1){
+    while((opt = getopt(argc, argv, "da:p:i:o:h")) != -1){
         switch(opt){
             case 'd':
                 DEBUG++;
                 break;
             case 'a':
-                if(sscanf(optarg, "%s:%d", (char *) &ipstring, &port) < 1) usage();
-                inet_pton(AF_INET, ipstring, &address.sin_addr.s_addr);
-                if(port > 0) address.sin_port = htons(port);
+                if(sscanf(optarg, "%s", (char *) &rawip) < 1) usage();
+                inet_pton(AF_INET, rawip, &ip);
+                break;
+            case 'p':
+                if(sscanf(optarg, "%hd", &rawport) < 1) usage();
+                if(rawport > 0) port = htons(rawport);
                 break;
             case 'i':
                 if(sscanf(optarg, "%s", infile) != 1) usage();
@@ -92,6 +91,12 @@ int main(int argc, char *argv[])
                 usage();
         }
     }
+
+    /* Initialize network address */
+    memset(&address, 0, sizeof(address));
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = ip;
+    address.sin_port = port;
 
     /* Initialize trie */
     trie = init_trienode();
@@ -109,7 +114,7 @@ int main(int argc, char *argv[])
 
     /* Bind to address and start listening for connections */
     int listenfd = socket(AF_INET, SOCK_STREAM, 0);
-    if(DEBUG) printf("[Main] Binding to address %s:%d\n", ipstring, port);
+    if(DEBUG) printf("[Main] Binding to address %s:%d\n", rawip, rawport);
     if(bind(listenfd, (struct sockaddr *) &address, sizeof(address)) != 0) error("Could not bind to address");
     listen(listenfd, BACKLOG);
 
@@ -120,7 +125,7 @@ int main(int argc, char *argv[])
     for(;;){
 
         /* Accept the connection and get ready to spin off a worker thread */
-        if(DEBUG) printf("[Main] Spinning off worker %d\n", curw);
+        if(DEBUG) printf("[Main] Listening for a client...\n");
         struct sockaddr_in clientaddress;
         socklen_t addresslen = sizeof(struct sockaddr_in);
         workers[curw].id = curw;
@@ -133,19 +138,23 @@ int main(int argc, char *argv[])
         struct hostnode *hostentry;
         HASH_FIND_STR(hosthash, clientip, hostentry);
         if(hostentry == NULL){ // If it's not already in the hashmap, then add it
+            if(DEBUG) printf("[Main] Client connected from new host %s\n", clientip);
             hostentry = malloc(sizeof(*hostentry));
             strcpy(hostentry->ip, clientip);
             HASH_ADD_STR(hosthash, ip, hostentry);
+        }else{
+            if(DEBUG) printf("[Main] Client connected from old host %s\n", clientip);
         }
 
         /* Print debug information about the connection */
         if(DEBUG){
             struct sockaddr_in acceptaddress;
             getsockname(workers[curw].fd, (struct sockaddr *) &acceptaddress, &addresslen);
-            printf("[Main] Worker %d on port %d will be servicing client at %s\n", curw, acceptaddress.sin_port, clientip);
+            printf("[Main] Worker %d on port %d will be servicing client at host %s\n", curw, acceptaddress.sin_port, clientip);
         }
         
         /* Spin off the worker thread */
+        if(DEBUG) printf("[Main] Spinning off worker %d\n", curw);
         pthread_t id;
         pthread_create(&id, NULL, worker, &workers[curw]);
         curw++;
@@ -291,7 +300,7 @@ char *prefix_to_binary(char *prefix)
 /* Cleanly handle termination signals */
 void handler(int sig)
 {
-    printf("[Handler] Saving database\n");
+    printf("\n[Handler] Saving database\n");
     if(outs != NULL) print_trie(trie); // Save the database before terminating
     printf("[Handler] Terminating cleanly\n");
     exit(EXIT_SUCCESS);
@@ -300,7 +309,7 @@ void handler(int sig)
 /* Print usage info and exit */
 void usage()
 {
-    printf("Usage: %s [-h] [-a ip[:port]] [-i infile] [-o outfile] [-d]...\n", name);
+    printf("Usage: %s [-h] [-a ipaddress] [-p port] [-i infile] [-o outfile] [-d]...\n", name);
     exit(EXIT_FAILURE);
 }
 
