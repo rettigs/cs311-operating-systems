@@ -18,6 +18,7 @@ int query(int wid, char *);
 void entry(int wid, char *, int);
 char *dec2bin(int);
 char *prefix_to_binary(char *);
+void handler(int);
 void usage();
 void error(char *);
 struct trienode *init_trienode();

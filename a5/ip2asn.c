@@ -15,6 +15,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <pthread.h>
+#include <signal.h>
 #include "ip2asn.h"
 #include "uthash.h"
 
@@ -39,9 +40,9 @@ int done = 0; // Whether we are done reading from stdin (have we reached EOF?)
 struct trienode *trie; // Our trie for storing ASNs
 struct sockaddr_in address; // Our network address
 char ipstring[MAX_IP_LEN]; // Our IP in string format
-struct hostnode hosts = NULL; // Hashmap to store unique client hosts
+struct hostnode *hosthash = NULL; // Hashmap to store unique client hosts
 int queries = 0; // Number of queries answered
-int prefixes  0; // Number of prefixes stored
+int prefixes = 0; // Number of prefixes stored
 
 /* Start an IP to ASN translation service server */
 int main(int argc, char *argv[])
@@ -65,7 +66,7 @@ int main(int argc, char *argv[])
 
     /* Parse flags */
     int opt;
-    short port = -1;
+    int port = -1;
     char infile[MAX_PATH_LEN];
     char outfile[MAX_PATH_LEN];
     while((opt = getopt(argc, argv, "da:i:o:h")) != -1){
@@ -74,8 +75,8 @@ int main(int argc, char *argv[])
                 DEBUG++;
                 break;
             case 'a':
-                if(sscanf(optarg, "%s:%h", &ipstring, &port) < 1) usage();
-                inet_pton(AF_INET, ipstring, address.sin_addr.s_addr);
+                if(sscanf(optarg, "%s:%d", (char *) &ipstring, &port) < 1) usage();
+                inet_pton(AF_INET, ipstring, &address.sin_addr.s_addr);
                 if(port > 0) address.sin_port = htons(port);
                 break;
             case 'i':
@@ -102,18 +103,18 @@ int main(int argc, char *argv[])
         char prefix[32+1];
         while(fscanf(ins, "%d %s\n", &ASN, prefix) > 0){ // Read each line
             if(DEBUG > 1) printf("[Main] Importing entry with ASN: %d,\tprefix: %s\n", ASN, prefix);
-            insert(trie, prefix, ASN);
+            insert(-1, trie, prefix, ASN);
         }
     }
 
     /* Bind to address and start listening for connections */
     int listenfd = socket(AF_INET, SOCK_STREAM, 0);
-    if(DEBUG) printf("[Main] Binding to address %s:%d\n", ASN, prefix);
-    if(bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) != 0) error("Could not bind to address");
+    if(DEBUG) printf("[Main] Binding to address %s:%d\n", ipstring, port);
+    if(bind(listenfd, (struct sockaddr *) &address, sizeof(address)) != 0) error("Could not bind to address");
     listen(listenfd, BACKLOG);
 
     /* Create array to store each worker's id and client socket fd */
-    struct workerarg worker[MAX_WORKERS];
+    struct workerarg workers[MAX_WORKERS];
 
     /* Keep accepting connections forever, spinning off new worker threads to handle each one */
     for(;;){
@@ -121,31 +122,32 @@ int main(int argc, char *argv[])
         /* Accept the connection and get ready to spin off a worker thread */
         if(DEBUG) printf("[Main] Spinning off worker %d\n", curw);
         struct sockaddr_in clientaddress;
-        worker[curw].id = curw;
-        worker[curw].fd = accept(listenfd, (struct sockaddr *) &clientaddress, &sizeof(struct sockaddr_in));
-        if(worker[curw].fd == -1) error("Could not accept connection");
+        socklen_t addresslen = sizeof(struct sockaddr_in);
+        workers[curw].id = curw;
+        workers[curw].fd = accept(listenfd, (struct sockaddr *) &clientaddress, &addresslen);
+        if(workers[curw].fd == -1) error("Could not accept connection");
 
         /* Add the client's IP to the list of unique hosts if it's not already in it */
         char clientip[MAX_IP_LEN];
-        net_ntop(AF_INET, clientaddress.sin_addr.s_addr, clientip, sizeof(*clientip));
+        inet_ntop(AF_INET, &clientaddress.sin_addr.s_addr, clientip, sizeof(*clientip));
         struct hostnode *hostentry;
-        HASH_FIND_STR(hosthash, clientip, hostentry)
+        HASH_FIND_STR(hosthash, clientip, hostentry);
         if(hostentry == NULL){ // If it's not already in the hashmap, then add it
             hostentry = malloc(sizeof(*hostentry));
             strcpy(hostentry->ip, clientip);
-            HASH_ADD_STR(hosthash, clientip, hostentry);
+            HASH_ADD_STR(hosthash, ip, hostentry);
         }
 
         /* Print debug information about the connection */
         if(DEBUG){
-            struct sockaddr acceptaddress;
-            getsockname(worker[curw].fd, acceptaddress, sizeof(acceptaddress));
-            printf("[Main] Worker %d will be servicing client %s\n", curw, clientip, acceptaddress.sin_port);
+            struct sockaddr_in acceptaddress;
+            getsockname(workers[curw].fd, (struct sockaddr *) &acceptaddress, &addresslen);
+            printf("[Main] Worker %d on port %d will be servicing client at %s\n", curw, acceptaddress.sin_port, clientip);
         }
         
         /* Spin off the worker thread */
         pthread_t id;
-        pthread_create(&id, NULL, worker, &client[curw]);
+        pthread_create(&id, NULL, worker, &workers[curw]);
         curw++;
     }
 
@@ -153,43 +155,48 @@ int main(int argc, char *argv[])
 }
 
 /* Perform commands given by the client */
-void *worker(void *worker)
+void *worker(void *workers)
 {
-    if(DEBUG) printf("[Worker %d] Started\n", worker->id);
+    int wid = ((struct workerarg *) workers)->id;
+
+    if(DEBUG) printf("[Worker %d] Started\n", wid);
 
     /* Open stream for socket */
-    FILE *stream = fdopen(worker->fd, "r+");
+    FILE *stream = fdopen(((struct workerarg *) workers)->fd, "r+");
 
     /* Initialize some variables to put scanned values into */
-    char ip[MAX_IP_LENGTH];
+    char ip[MAX_IP_LEN];
     int asn;
 
     /* Keep reading XML forever */
     for(;;){
         /* Read an XML command and perform the requested operation */
         if      (fscanf(stream, "<query><ip>%s</ip></query>", ip) == 1) XMLquery(wid, stream, ip);
-        else if (fscanf(stream, "<entry><cidr>%s</cidr><asn>%d</asn></entry>", ip, asn) == 2) XMLentry(wid, ip, asn);
+        else if (fscanf(stream, "<entry><cidr>%s</cidr><asn>%d</asn></entry>", ip, &asn) == 2) XMLentry(wid, ip, asn);
         else if (fscanf(stream, "<stats />") == 0) XMLstats(wid, stream);
         else if (fscanf(stream, "<terminate />") == 0){
-            printf("[Worker %d] Got termination notice; sending termination signal\n", worker->id);
+            printf("[Worker %d] Got termination notice; sending termination signal\n", wid);
             kill(0, SIGINT);
-            break;
+            pthread_exit(NULL);
         }
     }
 }
 
 /* Handle an XML query */
-void XMLquery(int wid, FILE *stream, char *ip){
+void XMLquery(int wid, FILE *stream, char *ip)
+{
     fprintf(stream, "<answer><asn>%d</asn></answer>\n", query(wid, ip));
 }
 
 /* Handle an XML entry */
-void XMLentry(int wid, char *cidr, int asn){
+void XMLentry(int wid, char *cidr, int asn)
+{
     entry(wid, cidr, asn);
 }
 
 /* Handle an XML stats request */
-void XMLstats(int wid, FILE *stream){
+void XMLstats(int wid, FILE *stream)
+{
     if(DEBUG) printf("[Worker %d] Doing a stat lookup\n", wid);
     fprintf(stream, "<stats><hosts>%d</hosts><queries>%d</queries><prefixes>%d</prefixes></stats>\n", HASH_COUNT(hosthash), queries, prefixes);
 }
@@ -206,7 +213,7 @@ int query(int wid, char *ip)
 
     if(DEBUG) printf("[Worker %d] Query: IP is %s, CIDR is %s, binary is %s\n", wid, ip, cidrip, binip);
 
-    return search(trie, binip);
+    return search(wid, trie, binip);
 }
 
 /* Adds the given ASN to the trie for the given prefix */
@@ -216,7 +223,7 @@ void entry(int wid, char *prefix, int ASN)
 
     if(DEBUG) printf("[Worker %d] Entry: CIDR is %s, binary is %s\n", wid, prefix, binprefix);
 
-    insert(trie, binprefix, ASN);
+    insert(wid, trie, binprefix, ASN);
 }
 
 /* Converts an 8-bit integer to binary in string format */
@@ -323,7 +330,10 @@ void insert(int wid, struct trienode *root, char *key, int value)
 {
     if(strlen(key) > 0) __recurseInsert(wid, root, key, value);
     else{
-        if(DEBUG > 1) printf("[Worker %d] Insert: key length is 0, placing ASN %d at root\n", wid, value);
+        if(DEBUG > 1){
+            if(wid == -1) printf("[Main] Insert: key length is 0, placing ASN %d at root\n", value);
+            else printf("[Worker %d] Insert: key length is 0, placing ASN %d at root\n", wid, value);
+        }
         root->ASN = value;
         root->populated = 1;
         prefixes++;
@@ -332,7 +342,7 @@ void insert(int wid, struct trienode *root, char *key, int value)
 
 /* Returns the ASN at the given location in the trie.
    Key is binary integer of no more than 32 bits, in string format */
-int search(struct trienode *root, char *key)
+int search(int wid, struct trienode *root, char *key)
 {
     int valuebuf = root->ASN;
     queries++;
