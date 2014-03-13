@@ -148,7 +148,7 @@ void *worker(void *worker)
         else if (fscanf(stream, "<stats />") == 1) XMLstats(wid, stream);
         else if (fscanf(stream, "<terminate />") == 1){
             printf("[Worker %d] Got termination notice; sending termination signal\n", worker->id);
-            kill(0, SIGSTOP);
+            kill(0, SIGINT);
             break;
         }
     }
