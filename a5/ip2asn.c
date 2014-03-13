@@ -18,7 +18,7 @@
 #include "ip2asn.h"
 #include "uthash.h"
 
-#define MAX_IP_LEN 16
+#define MAX_IP_LEN 32
 #define MAX_PATH_LEN 256
 #define MAX_WORKERS 2
 #define BACKLOG 1024
@@ -160,18 +160,38 @@ void *worker(void *worker)
     /* Open stream for socket */
     FILE *stream = fdopen(worker->fd, "r+");
 
-    /* Keep reading XML tags forever */
+    /* Initialize some variables to put scanned values into */
+    char ip[MAX_IP_LENGTH];
+    int asn;
+
+    /* Keep reading XML forever */
     for(;;){
-        /* Read an XML start tag and perform the requested operation */
-        if      (fscanf(stream, "<query>") == 1) XMLquery(wid, stream);
-        else if (fscanf(stream, "<entry>") == 1) XMLentry(wid, stream);
-        else if (fscanf(stream, "<stats />") == 1) XMLstats(wid, stream);
-        else if (fscanf(stream, "<terminate />") == 1){
+        /* Read an XML command and perform the requested operation */
+        if      (fscanf(stream, "<query><ip>%s</ip></query>", ip) == 1) XMLquery(wid, stream, ip);
+        else if (fscanf(stream, "<entry><cidr>%s</cidr><asn>%d</asn></entry>", ip, asn) == 2) XMLentry(wid, ip, asn);
+        else if (fscanf(stream, "<stats />") == 0) XMLstats(wid, stream);
+        else if (fscanf(stream, "<terminate />") == 0){
             printf("[Worker %d] Got termination notice; sending termination signal\n", worker->id);
             kill(0, SIGINT);
             break;
         }
     }
+}
+
+/* Handle an XML query */
+void XMLquery(int wid, FILE *stream, char *ip){
+    fprintf(stream, "<answer><asn>%d</asn></answer>\n", query(wid, ip));
+}
+
+/* Handle an XML entry */
+void XMLentry(int wid, char *cidr, int asn){
+    entry(wid, cidr, asn);
+}
+
+/* Handle an XML stats request */
+void XMLstats(int wid, FILE *stream){
+    if(DEBUG) printf("[Worker %d] Doing a stat lookup\n", wid);
+    fprintf(stream, "<stats><hosts>%d</hosts><queries>%d</queries><prefixes>%d</prefixes></stats>\n", HASH_COUNT(hosthash), queries, prefixes);
 }
 
 /* Looks up an IP address in the trie and returns the corresponding ASN */
@@ -187,18 +207,6 @@ int query(int wid, char *ip)
     if(DEBUG) printf("[Worker %d] Query: IP is %s, CIDR is %s, binary is %s\n", wid, ip, cidrip, binip);
 
     return search(trie, binip);
-}
-
-/* Handle an XML query */
-void XMLquery(int wid, FILE *stream){
-}
-
-/* Handle an XML entry */
-void XMLquery(int wid, FILE *stream){
-}
-
-/* Handle an XML stats request */
-void XMLquery(int wid, FILE *stream){
 }
 
 /* Adds the given ASN to the trie for the given prefix */
