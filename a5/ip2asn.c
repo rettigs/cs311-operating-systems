@@ -16,6 +16,7 @@
 #include <ctype.h>
 #include <pthread.h>
 #include "ip2asn.h"
+#include "uthash.h"
 
 #define MAX_IP_LEN 16
 #define MAX_PATH_LEN 256
@@ -23,6 +24,11 @@
 #define BACKLOG 1024
 #define DEFAULT_IP INADDR_ANY
 #define DEFAULT_PORT 54321
+
+struct hostnode{
+    char ip[MAX_IP_LEN];
+    UT_hash_handle hh;
+};
 
 char *name; // Name of program
 int DEBUG = 0; // Whether we are in debug mode
@@ -33,6 +39,9 @@ int done = 0; // Whether we are done reading from stdin (have we reached EOF?)
 struct trienode *trie; // Our trie for storing ASNs
 struct sockaddr_in address; // Our network address
 char ipstring[MAX_IP_LEN]; // Our IP in string format
+struct hostnode hosts = NULL; // Hashmap to store unique client hosts
+int queries = 0; // Number of queries answered
+int prefixes  0; // Number of prefixes stored
 
 /* Start an IP to ASN translation service server */
 int main(int argc, char *argv[])
@@ -116,12 +125,23 @@ int main(int argc, char *argv[])
         worker[curw].fd = accept(listenfd, (struct sockaddr *) &clientaddress, &sizeof(struct sockaddr_in));
         if(worker[curw].fd == -1) error("Could not accept connection");
 
-        /* Print debug information about the connection */
+        /* Add the client's IP to the list of unique hosts if it's not already in it */
         char clientip[MAX_IP_LEN];
         net_ntop(AF_INET, clientaddress.sin_addr.s_addr, clientip, sizeof(*clientip));
-        struct sockaddr acceptaddress;
-        getsockname(worker[curw].fd, acceptaddress, sizeof(acceptaddress));
-        if(DEBUG) printf("[Main] Worker %d will be servicing client %s\n", curw, clientip, acceptaddress.sin_port);
+        struct hostnode *hostentry;
+        HASH_FIND_STR(hosthash, clientip, hostentry)
+        if(hostentry == NULL){ // If it's not already in the hashmap, then add it
+            hostentry = malloc(sizeof(*hostentry));
+            strcpy(hostentry->ip, clientip);
+            HASH_ADD_STR(hosthash, clientip, hostentry);
+        }
+
+        /* Print debug information about the connection */
+        if(DEBUG){
+            struct sockaddr acceptaddress;
+            getsockname(worker[curw].fd, acceptaddress, sizeof(acceptaddress));
+            printf("[Main] Worker %d will be servicing client %s\n", curw, clientip, acceptaddress.sin_port);
+        }
         
         /* Spin off the worker thread */
         pthread_t id;
@@ -298,6 +318,7 @@ void insert(int wid, struct trienode *root, char *key, int value)
         if(DEBUG > 1) printf("[Worker %d] Insert: key length is 0, placing ASN %d at root\n", wid, value);
         root->ASN = value;
         root->populated = 1;
+        prefixes++;
     }
 }
 
@@ -306,6 +327,7 @@ void insert(int wid, struct trienode *root, char *key, int value)
 int search(struct trienode *root, char *key)
 {
     int valuebuf = root->ASN;
+    queries++;
     return __recurseSearch(wid, root, key, &valuebuf);
 }
 
