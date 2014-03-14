@@ -13,11 +13,12 @@ def main():
     ip = '127.0.0.1'
     port = 54321
     infile = None
-    outfile = sys.stdout
+    stats = False
+    kill = False
 
 # Parse arguments
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "da:p:i:o:skh")
+        opts, args = getopt.getopt(sys.argv[1:], "da:p:i:skh")
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -31,10 +32,10 @@ def main():
             port = int(a)
         elif o == "-i":
             infile = open(a, 'r')
-        elif o == "-o":
-            outfile = open(a, 'w')
-        elif o == "-q":
-            checkip = a
+        elif o == "-s":
+            stats = True
+        elif o == "-k":
+            kill = True
         else:
             usage()
         
@@ -46,29 +47,36 @@ def main():
         s.connect((ip, port))
     except socket.error:
         print 'No server listening at {}:{}'.format(ip, port)
-        sys.exit(0)
+        sys.exit(2)
 
-    if infile is not None: # Run in batch mode if we were given an infile
+# Update server with new prefixes/ASNs
+    if infile is not None:
         if debug:
-            print 'Running in batch mode'
+            print 'Sending updates to server'
         for line in infile:
-            line = line.rstrip('\n')
+            prefix = re.sub(r'(.*) .*', r'\1', line)
+            asn = re.sub(r'.* (.*)', r'\1', line)
             if debug > 1:
-                print 'Line is ' + line
-                print 'Sending query to server'
-            s.send('<query><ip> {} </ip></query>\n'.format(line))
-            if debug > 1:
-                print 'Waiting for response from server...'
-            asn = re.sub(r'<answer><asn> (\d+) </asn></answer>', r'\1', s.makefile().readline())
-            outfile.write(line + '\t' + asn)
-    elif checkip is not None: # Run in one-off mode if we were given a single query ip address
+                print 'Sending update to server with prefix {} and ASN {}'.format(prefix, asn)
+            s.send('<entry><cidr> {} </cidr><asn> {} </asn></entry>\n'.format(prefix, asn))
+
+# Get usage statistics from server
+    if stats:
         if debug:
-            print 'Running in one-off mode'
-        s.send('<query><ip> {} </ip></query>\n'.format(checkip))
-        asn = re.sub(r'<answer><asn> (\d+) </asn></answer>', r'\1', s.makefile().readline())
-        print asn
-    else:
-        usage()
+            print 'Querying server for usage statistics'
+        s.send('<stats />\n')
+        if debug:
+            print 'Waiting for response from server...'
+        line = s.makefile().readline()
+        print 'Unique hosts serviced:\t' + re.sub(r'.*<hosts> (\d+) </hosts>.*', r'\1', line)
+        print 'Queries answered:\t' + re.sub(r'.*<queries> (\d+) </queries>.*', r'\1', line)
+        print 'Prefixes stored:\t' + re.sub(r'.*<prefixes> (\d+) </prefixes>.*', r'\1', line)
+
+# Kill server
+    if kill:
+        if debug:
+            print 'Sending kill signal to server'
+        s.send('<terminate />\n')
 
 # Close the connection
     s.send('<done />\n')
