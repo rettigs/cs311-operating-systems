@@ -183,18 +183,34 @@ void *worker(void *workers)
     /* Keep reading XML until we get a "termination" or "done" command */
     for(;;){
 
-        /* Read a line */
+        /* Read a full XML command (needed in case the network breaks up packets) */
         if(DEBUG) printf("[Worker %d] Waiting for command...\n", wid);
-        if(fgets(line, MAX_LINE_LEN, stream) == NULL) break;
+        memset(line, '\0', MAX_LINE_LEN);
+        int numlab = 0;
+        int numrab = 0;
+        int numslash = 0;
+        for(;;){
+            if(DEBUG > 1) printf("[Worker %d] linelen: %d\tnumlab: %d\tnumrab: %d\tnumslash: %d\n", wid, (int) strlen(line) + 1, numlab, numrab, numslash);
+            if(strlen(line) + 1 >= MAX_LINE_LEN) break; // Break if we have hit the max line length
+            if(numlab != 0 && numlab == numrab && numlab % 2 == 0 && numlab / 2 == numslash) break; // Break if we have a "complete" XML command
+            char nextchar = fgetc(stream);
+            if      (nextchar == '<') numlab++;
+            else if (nextchar == '>') numrab++;
+            else if (nextchar == '/') numslash++;
+            else if (nextchar == EOF){
+                if(DEBUG) printf("[Worker %d] Got EOF; terminating'\n", wid);
+                pthread_exit(NULL);
+            }
+            if(DEBUG > 1) printf("[Worker %d] Got char '%c'\n", wid, nextchar);
+            strcat(line, &nextchar);
+        }
+        if(DEBUG) printf("[Worker %d] Got command '%s'\n", wid, line);
 
         /* Parse it as an XML command and perform the requested operation */
-        if          (sscanf(line, "<query><ip> %s </ip></query>", ip) == 1) XMLquery(wid, stream, ip);
-        else if     (sscanf(line, "<entry><cidr> %s </cidr><asn> %d </asn></entry>", ip, &asn) == 2) XMLentry(wid, ip, asn);
-        else if     (strncmp(line, "<stats />", 9) == 0) XMLstats(wid, stream);
-        else if     (strncmp(line, "<done />", 8) == 0){
-            if(DEBUG) printf("[Worker %d] Client done; terminating\n", wid);
-            break;
-        }else if     (strncmp(line, "<terminate />", 13) == 0){
+        if      (sscanf(line, "<query><ip> %s </ip></query>", ip) == 1) XMLquery(wid, stream, ip);
+        else if (sscanf(line, "<entry><cidr> %s </cidr><asn> %d </asn></entry>", ip, &asn) == 2) XMLentry(wid, ip, asn);
+        else if (strncmp(line, "<stats></stats>", 9) == 0) XMLstats(wid, stream);
+        else if (strncmp(line, "<terminate></terminate>", 13) == 0){
             printf("[Worker %d] Got termination notice; sending termination signal\n", wid);
             kill(0, SIGINT);
             break;
@@ -328,13 +344,13 @@ void handler(int sig)
 void usage()
 {
     printf("Usage: %s [-h] [-a ipaddress] [-p port] [-c infile] [-i indb] [-o outdb] [-d]...\n", name);
-    printf("\t-h\tview this help");
-    printf("\t-a\tspecify the IP address to bind to, defaults to INADDR_ANY");
-    printf("\t-p\tspecify the port to bind to, defaults to 54321");
-    printf("\t-c\tspecify an input file to initialize the trie from; works with CIDR prefix + ASN pairs");
-    printf("\t-i\tspecify an input database file to initialize the trie from; only works with dumps from -o");
-    printf("\t-o\tspecify an output database file to save the trie to upon termination");
-    printf("\t-d\tenable debug messages; use -dd for more even more messages");
+    printf("\t-h\tview this help\n");
+    printf("\t-a\tspecify the IP address to bind to, defaults to INADDR_ANY\n");
+    printf("\t-p\tspecify the port to bind to, defaults to 54321\n");
+    printf("\t-c\tspecify an input file to initialize the trie from; works with CIDR prefix + ASN pairs\n");
+    printf("\t-i\tspecify an input database file to initialize the trie from; only works with dumps from -o\n");
+    printf("\t-o\tspecify an output database file to save the trie to upon termination\n");
+    printf("\t-d\tenable debug messages; use -dd for more even more messages\n");
     exit(EXIT_FAILURE);
 }
 

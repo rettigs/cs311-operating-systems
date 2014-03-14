@@ -56,22 +56,21 @@ def main():
             if debug > 1:
                 print 'Line is ' + line
                 print 'Sending query to server'
-            s.send('<query><ip> {0} </ip></query>\n'.format(line))
+            s.send('<query><ip> {0} </ip></query>'.format(line))
             if debug > 1:
                 print 'Waiting for response from server...'
             asn = re.sub(r'<answer><asn> ([+-]?\d+) </asn></answer>', r'\1', s.makefile().readline())
-            outfile.write(line + '\t' + asn)
+            outfile.write(' ' + line + '\t' + asn)
     elif checkip is not None: # Run in one-off mode if we were given a single query ip address
         if debug:
             print 'Running in one-off mode'
-        s.send('<query><ip> {0} </ip></query>\n'.format(checkip))
+        s.send('<query><ip> {0} </ip></query>'.format(checkip))
         asn = re.sub(r'<answer><asn> ([+-]?\d+) </asn></answer>', r'\1', s.makefile().readline())
         print asn
     else:
         usage()
 
 # Close the connection
-    s.send('<done />\n')
     s.close()
 
 def usage():

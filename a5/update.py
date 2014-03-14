@@ -58,13 +58,13 @@ def main():
             asn = re.sub(r'.* (.*)', r'\1', line)
             if debug > 1:
                 print 'Sending update to server with prefix {0} and ASN {1}'.format(prefix, asn)
-            s.send('<entry><cidr> {0} </cidr><asn> {1} </asn></entry>\n'.format(prefix, asn))
+            s.send('<entry><cidr> {0} </cidr><asn> {1} </asn></entry>'.format(prefix, asn))
 
 # Get usage statistics from server
     if stats:
         if debug:
             print 'Querying server for usage statistics'
-        s.send('<stats />\n')
+        s.send('<stats></stats>')
         if debug:
             print 'Waiting for response from server...'
         line = s.makefile().readline()
@@ -76,10 +76,9 @@ def main():
     if kill:
         if debug:
             print 'Sending kill signal to server'
-        s.send('<terminate />\n')
+        s.send('<terminate></terminate>')
 
 # Close the connection
-    s.send('<done />\n')
     s.close()
 
 def usage():
