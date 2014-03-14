@@ -191,8 +191,10 @@ void *worker(void *workers)
         if          (sscanf(line, "<query><ip> %s </ip></query>", ip) == 1) XMLquery(wid, stream, ip);
         else if     (sscanf(line, "<entry><cidr> %s </cidr><asn> %d </asn></entry>", ip, &asn) == 2) XMLentry(wid, ip, asn);
         else if     (strncmp(line, "<stats />", 9) == 0) XMLstats(wid, stream);
-        else if     (strncmp(line, "<done />", 8) == 0) if(DEBUG) printf("[Worker %d] Client done; terminating\n", wid); break;
-        }else if    (strncmp(line, "<terminate />", 13) == 0){
+        else if     (strncmp(line, "<done />", 8) == 0){
+            if(DEBUG) printf("[Worker %d] Client done; terminating\n", wid);
+            break;
+        }else if     (strncmp(line, "<terminate />", 13) == 0){
             printf("[Worker %d] Got termination notice; sending termination signal\n", wid);
             kill(0, SIGINT);
             break;
