@@ -21,6 +21,7 @@
 
 #define MAX_IP_LEN 32
 #define MAX_PATH_LEN 256
+#define MAX_LINE_LEN 256
 #define MAX_WORKERS 2
 #define BACKLOG 1024
 #define DEFAULT_IP INADDR_ANY
@@ -105,10 +106,10 @@ int main(int argc, char *argv[])
     if(ins != NULL){
         if(DEBUG) printf("[Main] Importing database\n");
         int ASN;
-        char prefix[32+1];
-        while(fscanf(ins, "%d %s\n", &ASN, prefix) > 0){ // Read each line
+        char prefix[MAX_IP_LEN];
+        while(fscanf(ins, "%s %d\n", prefix, &ASN) > 0){ // Read each line
             if(DEBUG > 1) printf("[Main] Importing entry with ASN: %d,\tprefix: %s\n", ASN, prefix);
-            insert(-1, trie, prefix, ASN);
+            entry(-1, prefix, ASN);
         }
     }
 
@@ -171,30 +172,39 @@ void *worker(void *workers)
     if(DEBUG) printf("[Worker %d] Started\n", wid);
 
     /* Open stream for socket */
+    if(DEBUG) printf("[Worker %d] Opening stream for socket\n", wid);
     FILE *stream = fdopen(((struct workerarg *) workers)->fd, "r+");
 
     /* Initialize some variables to put scanned values into */
+    char line[MAX_LINE_LEN];
     char ip[MAX_IP_LEN];
     int asn;
 
     /* Keep reading XML forever */
     for(;;){
-        /* Read an XML command and perform the requested operation */
-        if      (fscanf(stream, "<query><ip>%s</ip></query>", ip) == 1) XMLquery(wid, stream, ip);
-        else if (fscanf(stream, "<entry><cidr>%s</cidr><asn>%d</asn></entry>", ip, &asn) == 2) XMLentry(wid, ip, asn);
-        else if (fscanf(stream, "<stats />") == 0) XMLstats(wid, stream);
-        else if (fscanf(stream, "<terminate />") == 0){
+
+        /* Read a line */
+        if(DEBUG) printf("[Worker %d] Waiting for command...\n", wid);
+        if(fgets(line, MAX_LINE_LEN, stream) == NULL) break;
+
+        /* Parse it as an XML command and perform the requested operation */
+        if      (sscanf(line, "<query><ip> %s </ip></query>", ip) == 1) XMLquery(wid, stream, ip);
+        else if (sscanf(line, "<entry><cidr> %s </cidr><asn> %d </asn></entry>", ip, &asn) == 2) XMLentry(wid, ip, asn);
+        else if (sscanf(line, "<stats />") == 0) XMLstats(wid, stream);
+        else if (sscanf(line, "<terminate />") == 0){
             printf("[Worker %d] Got termination notice; sending termination signal\n", wid);
             kill(0, SIGINT);
-            pthread_exit(NULL);
+            break;
         }
     }
+
+    pthread_exit(NULL);
 }
 
 /* Handle an XML query */
 void XMLquery(int wid, FILE *stream, char *ip)
 {
-    fprintf(stream, "<answer><asn>%d</asn></answer>\n", query(wid, ip));
+    fprintf(stream, "<answer><asn> %d </asn></answer>\n", query(wid, ip));
 }
 
 /* Handle an XML entry */
@@ -207,7 +217,7 @@ void XMLentry(int wid, char *cidr, int asn)
 void XMLstats(int wid, FILE *stream)
 {
     if(DEBUG) printf("[Worker %d] Doing a stat lookup\n", wid);
-    fprintf(stream, "<stats><hosts>%d</hosts><queries>%d</queries><prefixes>%d</prefixes></stats>\n", HASH_COUNT(hosthash), queries, prefixes);
+    fprintf(stream, "<stats><hosts> %d </hosts><queries> %d </queries><prefixes> %d </prefixes></stats>\n", HASH_COUNT(hosthash), queries, prefixes);
 }
 
 /* Looks up an IP address in the trie and returns the corresponding ASN */
@@ -230,7 +240,10 @@ void entry(int wid, char *prefix, int ASN)
 {
     char *binprefix = prefix_to_binary(prefix);
 
-    if(DEBUG) printf("[Worker %d] Entry: CIDR is %s, binary is %s\n", wid, prefix, binprefix);
+    if(DEBUG){
+        if(wid == -1) printf("[Main] Entry: CIDR is %s, binary is %s\n", prefix, binprefix);
+        else printf("[Worker %d] Entry: CIDR is %s, binary is %s\n", wid, prefix, binprefix);
+    }
 
     insert(wid, trie, binprefix, ASN);
 }
