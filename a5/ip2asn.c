@@ -180,7 +180,7 @@ void *worker(void *workers)
     char ip[MAX_IP_LEN];
     int asn;
 
-    /* Keep reading XML forever */
+    /* Keep reading XML until we get a "termination" or "done" command */
     for(;;){
 
         /* Read a line */
@@ -188,13 +188,16 @@ void *worker(void *workers)
         if(fgets(line, MAX_LINE_LEN, stream) == NULL) break;
 
         /* Parse it as an XML command and perform the requested operation */
-        if      (sscanf(line, "<query><ip> %s </ip></query>", ip) == 1) XMLquery(wid, stream, ip);
-        else if (sscanf(line, "<entry><cidr> %s </cidr><asn> %d </asn></entry>", ip, &asn) == 2) XMLentry(wid, ip, asn);
-        else if (sscanf(line, "<stats />") == 0) XMLstats(wid, stream);
-        else if (sscanf(line, "<terminate />") == 0){
+        if          (sscanf(line, "<query><ip> %s </ip></query>", ip) == 1) XMLquery(wid, stream, ip);
+        else if     (sscanf(line, "<entry><cidr> %s </cidr><asn> %d </asn></entry>", ip, &asn) == 2) XMLentry(wid, ip, asn);
+        else if     (strncmp(line, "<stats />", 9) == 0) XMLstats(wid, stream);
+        else if     (strncmp(line, "<done />", 8) == 0) if(DEBUG) printf("[Worker %d] Client done; terminating\n", wid); break;
+        }else if    (strncmp(line, "<terminate />", 13) == 0){
             printf("[Worker %d] Got termination notice; sending termination signal\n", wid);
             kill(0, SIGINT);
             break;
+        }else{
+            if(DEBUG) printf("[Worker %d] Invalid command '%s'\n", wid, line);
         }
     }
 
@@ -383,6 +386,7 @@ void __recurseInsert(int wid, struct trienode *root, char *key, int value)
         if(!root->populated){
             root->ASN = value;
             root->populated = 1;
+            prefixes++;
         }else if(DEBUG) printf("[Worker %d] Recursive insert: duplicate assignment; node already contains ASN %d; not adding %d\n", wid, root->ASN, value);
         return;
     }

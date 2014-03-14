@@ -61,16 +61,18 @@ def main():
             if debug > 1:
                 print 'Waiting for response from server...'
             asn = re.sub(r'<answer><asn> (\d+) </asn></answer>', r'\1', s.makefile().readline())
-            outfile.write(line + ' ' + asn)
+            outfile.write(line + '\t' + asn)
     elif checkip is not None: # Run in one-off mode if we were given a single query ip address
         if debug:
             print 'Running in one-off mode'
         s.send('<query><ip> {} </ip></query>\n'.format(checkip))
         asn = re.sub(r'<answer><asn> (\d+) </asn></answer>', r'\1', s.makefile().readline())
-        print checkip + ' ' + asn
+        print asn
     else:
         usage()
 
+# Close the connection
+    s.send('<done />\n')
     s.close()
 
 def usage():
