@@ -40,12 +40,12 @@ def main():
         
 # Set up the socket
     if debug:
-        print 'Attempting to connect to {}:{}'.format(ip, port)
+        print 'Attempting to connect to {0}:{1}'.format(ip, port)
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         s.connect((ip, port))
     except socket.error:
-        print 'No server listening at {}:{}'.format(ip, port)
+        print 'No server listening at {0}:{1}'.format(ip, port)
         sys.exit(2)
 
     if infile is not None: # Run in batch mode if we were given an infile
@@ -56,16 +56,16 @@ def main():
             if debug > 1:
                 print 'Line is ' + line
                 print 'Sending query to server'
-            s.send('<query><ip> {} </ip></query>\n'.format(line))
+            s.send('<query><ip> {0} </ip></query>\n'.format(line))
             if debug > 1:
                 print 'Waiting for response from server...'
-            asn = re.sub(r'<answer><asn> (\d+) </asn></answer>', r'\1', s.makefile().readline())
+            asn = re.sub(r'<answer><asn> ([+-]?\d+) </asn></answer>', r'\1', s.makefile().readline())
             outfile.write(line + '\t' + asn)
     elif checkip is not None: # Run in one-off mode if we were given a single query ip address
         if debug:
             print 'Running in one-off mode'
-        s.send('<query><ip> {} </ip></query>\n'.format(checkip))
-        asn = re.sub(r'<answer><asn> (\d+) </asn></answer>', r'\1', s.makefile().readline())
+        s.send('<query><ip> {0} </ip></query>\n'.format(checkip))
+        asn = re.sub(r'<answer><asn> ([+-]?\d+) </asn></answer>', r'\1', s.makefile().readline())
         print asn
     else:
         usage()
@@ -75,7 +75,7 @@ def main():
     s.close()
 
 def usage():
-    print 'Usage: {} [-h] [-a server_ipaddress] [-p server_port] [-i infile] [-o outfile] [-q query_ipaddress] [-d]...'.format(sys.argv[0])
+    print 'Usage: {0} [-h] [-a server_ipaddress] [-p server_port] [-i infile] [-o outfile] [-q query_ipaddress] [-d]...'.format(sys.argv[0])
     print '\t-h\tview this help'
     print '\t-a\tspecify the IP address of the server to connect to, defaults to 127.0.0.1'
     print '\t-p\tspecify the port of the server to connect to, defaults to 54321'

@@ -41,12 +41,12 @@ def main():
         
 # Set up the socket
     if debug:
-        print 'Attempting to connect to {}:{}'.format(ip, port)
+        print 'Attempting to connect to {0}:{1}'.format(ip, port)
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         s.connect((ip, port))
     except socket.error:
-        print 'No server listening at {}:{}'.format(ip, port)
+        print 'No server listening at {0}:{1}'.format(ip, port)
         sys.exit(2)
 
 # Update server with new prefixes/ASNs
@@ -57,8 +57,8 @@ def main():
             prefix = re.sub(r'(.*) .*', r'\1', line)
             asn = re.sub(r'.* (.*)', r'\1', line)
             if debug > 1:
-                print 'Sending update to server with prefix {} and ASN {}'.format(prefix, asn)
-            s.send('<entry><cidr> {} </cidr><asn> {} </asn></entry>\n'.format(prefix, asn))
+                print 'Sending update to server with prefix {0} and ASN {1}'.format(prefix, asn)
+            s.send('<entry><cidr> {0} </cidr><asn> {1} </asn></entry>\n'.format(prefix, asn))
 
 # Get usage statistics from server
     if stats:
@@ -83,7 +83,7 @@ def main():
     s.close()
 
 def usage():
-    print 'Usage: {} [-h] [-a server_ipaddress] [-p server_port] [-i infile] [-o outfile] [-s] [-k] [-d]...'.format(sys.argv[0])
+    print 'Usage: {0} [-h] [-a server_ipaddress] [-p server_port] [-i infile] [-o outfile] [-s] [-k] [-d]...'.format(sys.argv[0])
     print '\t-h\tview this help'
     print '\t-a\tspecify the IP address of the server to connect to, defaults to 127.0.0.1'
     print '\t-p\tspecify the port of the server to connect to, defaults to 54321'
