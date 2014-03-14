@@ -325,7 +325,14 @@ void handler(int sig)
 /* Print usage info and exit */
 void usage()
 {
-    printf("Usage: %s [-h] [-a ipaddress] [-p port] [-i infile] [-o outfile] [-d]...\n", name);
+    printf("Usage: %s [-h] [-a ipaddress] [-p port] [-c infile] [-i indb] [-o outdb] [-d]...\n", name);
+    printf("\t-h\tview this help");
+    printf("\t-a\tspecify the IP address to bind to, defaults to INADDR_ANY");
+    printf("\t-p\tspecify the port to bind to, defaults to 54321");
+    printf("\t-c\tspecify an input file to initialize the trie from; works with CIDR prefix + ASN pairs");
+    printf("\t-i\tspecify an input database file to initialize the trie from; only works with dumps from -o");
+    printf("\t-o\tspecify an output database file to save the trie to upon termination");
+    printf("\t-d\tenable debug messages; use -dd for more even more messages");
     exit(EXIT_FAILURE);
 }
 

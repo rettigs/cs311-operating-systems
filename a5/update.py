@@ -6,7 +6,6 @@ import getopt
 import socket
 import re
 
-
 def main():
 
 # Defaults
@@ -18,7 +17,7 @@ def main():
 
 # Parse arguments
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "da:p:i:o:q:h")
+        opts, args = getopt.getopt(sys.argv[1:], "da:p:i:o:skh")
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -76,13 +75,13 @@ def main():
     s.close()
 
 def usage():
-    print 'Usage: {} [-h] [-a server_ipaddress] [-p server_port] [-i infile] [-o outfile] [-q query_ipaddress] [-d]...'.format(sys.argv[0])
+    print 'Usage: {} [-h] [-a server_ipaddress] [-p server_port] [-i infile] [-o outfile] [-s] [-k] [-d]...'.format(sys.argv[0])
     print '\t-h\tview this help'
     print '\t-a\tspecify the IP address of the server to connect to, defaults to 127.0.0.1'
     print '\t-p\tspecify the port of the server to connect to, defaults to 54321'
-    print '\t-i\tspecify an input file of IP addresses to query the server with'
-    print '\t-o\tspecify an output file for query results, defaults to stdout; only works with -i'
-    print '\t-q\tquery a single IP address; cannot be used with -i'
+    print '\t-i\tspecify an input file of CIDR prefixes and ASNs to update the server with'
+    print '\t-s\tenable reporting mode; query server for usage statistics'
+    print '\t-k\tkill the server'
     print '\t-d\tenable debug messages; use -dd for more even more messages'
     sys.exit(2)
         
