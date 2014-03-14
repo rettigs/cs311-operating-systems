@@ -6,7 +6,6 @@ import getopt
 import socket
 import re
 
-
 def main():
 
 # Defaults
@@ -47,7 +46,7 @@ def main():
         s.connect((ip, port))
     except socket.error:
         print 'No server listening at {}:{}'.format(ip, port)
-        sys.exit(0)
+        sys.exit(2)
 
     if infile is not None: # Run in batch mode if we were given an infile
         if debug:
