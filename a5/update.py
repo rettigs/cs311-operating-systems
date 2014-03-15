@@ -82,7 +82,7 @@ def main():
     s.close()
 
 def usage():
-    print 'Usage: {0} [-h] [-a server_ipaddress] [-p server_port] [-i infile] [-o outfile] [-s] [-k] [-d]...'.format(sys.argv[0])
+    print 'Usage: {0} [-h] [-a server_ipaddress] [-p server_port] [-i infile] [-s] [-k] [-d]...'.format(sys.argv[0])
     print '\t-h\tview this help'
     print '\t-a\tspecify the IP address of the server to connect to, defaults to 127.0.0.1'
     print '\t-p\tspecify the port of the server to connect to, defaults to 54321'
