@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
     /* Populate trie from database, if one is given */
     if(strlen(infile) > 0){
         FILE *ins = fopen(infile, "r");
-        if(ins == NULL) error("Could not open input file");
+        if(ins == NULL) perror("Could not open input file");
         else{
             if(DEBUG) printf("[Main] Importing database\n");
             int ASN;
@@ -110,8 +110,8 @@ int main(int argc, char *argv[])
                 if(DEBUG > 1) printf("[Main] Importing entry with ASN: %d,\tprefix: %s\n", ASN, prefix);
                 entry(-1, prefix, ASN);
             }
+            fclose(ins);
         }
-        fclose(ins);
     }
 
     /* Bind to address and start listening for connections */
