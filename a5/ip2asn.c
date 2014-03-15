@@ -35,8 +35,8 @@ struct hostnode{
 char *name; // Name of program
 int DEBUG = 0; // Whether we are in debug mode
 int curw = 0; // Number of workers currently running
-FILE *ins = NULL; // Stream to write trie to at end
-FILE *outs = NULL; // Stream to read trie from at start
+char infile[MAX_PATH_LEN]; // File to write trie to at end
+char outfile[MAX_PATH_LEN]; // File to read trie from at start
 int done = 0; // Whether we are done reading from stdin (have we reached EOF?)
 struct trienode *trie; // Our trie for storing ASNs
 struct sockaddr_in address; // Our network address
@@ -64,8 +64,6 @@ int main(int argc, char *argv[])
     int ip = DEFAULT_IP; // Our IP in network byte ordered int format
     unsigned short rawport = DEFAULT_PORT; // Our port in local format
     unsigned short port = htons(DEFAULT_PORT); // Our port in network byte ordered format
-    char infile[MAX_PATH_LEN];
-    char outfile[MAX_PATH_LEN];
     while((opt = getopt(argc, argv, "da:p:i:o:h")) != -1){
         switch(opt){
             case 'd':
@@ -81,11 +79,9 @@ int main(int argc, char *argv[])
                 break;
             case 'i':
                 if(sscanf(optarg, "%s", infile) != 1) usage();
-                if((ins = fopen(infile, "r")) == NULL) error("Could not open input file");
                 break;
             case 'o':
                 if(sscanf(optarg, "%s", outfile) != 1) usage();
-                if((outs = fopen(outfile, "w")) == NULL) error("Could not open output file");
                 break;
             case 'h':
             default: // '?'
@@ -103,14 +99,19 @@ int main(int argc, char *argv[])
     trie = init_trienode();
 
     /* Populate trie from database, if one is given */
-    if(ins != NULL){
-        if(DEBUG) printf("[Main] Importing database\n");
-        int ASN;
-        char prefix[MAX_IP_LEN];
-        while(fscanf(ins, "%s %d\n", prefix, &ASN) > 0){ // Read each line
-            if(DEBUG > 1) printf("[Main] Importing entry with ASN: %d,\tprefix: %s\n", ASN, prefix);
-            entry(-1, prefix, ASN);
+    if(strlen(infile) > 0){
+        FILE *ins = fopen(infile, "r");
+        if(ins == NULL) error("Could not open input file");
+        else{
+            if(DEBUG) printf("[Main] Importing database\n");
+            int ASN;
+            char prefix[MAX_IP_LEN];
+            while(fscanf(ins, "%s %d\n", prefix, &ASN) > 0){ // Read each line
+                if(DEBUG > 1) printf("[Main] Importing entry with ASN: %d,\tprefix: %s\n", ASN, prefix);
+                entry(-1, prefix, ASN);
+            }
         }
+        fclose(ins);
     }
 
     /* Bind to address and start listening for connections */
@@ -253,7 +254,11 @@ int query(int wid, char *ip)
 
     if(DEBUG) printf("[Worker %d] Query: IP is %s, CIDR is %s, binary is %s\n", wid, ip, cidrip, binip);
 
-    return search(wid, trie, binip);
+    int result = search(wid, trie, binip);
+
+    free(binip);
+
+    return result;
 }
 
 /* Adds the given ASN to the trie for the given prefix */
@@ -267,6 +272,8 @@ void entry(int wid, char *prefix, int ASN)
     }
 
     insert(wid, trie, binprefix, ASN);
+
+    free(binprefix);
 }
 
 /* Converts an 8-bit integer to binary in string format */
@@ -331,11 +338,61 @@ char *prefix_to_binary(char *prefix)
 	return binary_string;
 }
 
+/* Converts an 8-bit binary string to an integer */
+int bin2dec(char *binary)
+{
+    int num = 0;
+    int place = 128;
+    for(int i = 0; i < 8; i++){
+        if(binary[i] == '1') num += place;
+        place /= 2;
+    }
+    return num;
+}
+
+/* Converts a 32-bit binary prefix in sting format to a CIDR address */
+char *binary_to_prefix(char *binary)
+{
+	char *cidr = malloc(sizeof(char) * 19); // Max length of IPv4 address + slash + 2 digit number + null terminator
+
+    int len = strlen(binary);
+
+    /* Fill in the rest of the binary string with zeroes */
+    char binaryfull[32];
+    strncpy(binaryfull, binary, 32);
+    memset(&binaryfull[len], '0', sizeof(char) * (32 - len));
+
+    /* Add dotted quads */
+    for(int i = 0; i < 32; i += 8){
+        char num[4];
+        sprintf(num, "%d", bin2dec(&binaryfull[i]));
+        strcat(cidr, num);
+        if(i < 24) strcat(cidr, ".");
+    }
+
+    /* Add prefix size */
+    strcat(cidr, "/");
+    char lenstr[3];
+    sprintf(lenstr, "%d", len);
+    strcat(cidr, lenstr);
+
+    return cidr;
+}
+
 /* Cleanly handle termination signals */
 void handler(int sig)
 {
-    printf("\n[Handler] Saving database\n");
-    if(outs != NULL) print_trie(trie); // Save the database before terminating
+    /* Save the database before terminating */
+    if(strlen(outfile) > 0){
+        FILE *outs = fopen(outfile, "w");
+        if(outs == NULL) error("Could not open output file");
+        else{
+            printf("\n[Handler] Saving database\n");
+            print_trie(outs, trie);
+        }
+        fclose(outs);
+    }
+
     printf("[Handler] Terminating cleanly\n");
     exit(EXIT_SUCCESS);
 }
@@ -347,9 +404,8 @@ void usage()
     printf("\t-h\tview this help\n");
     printf("\t-a\tspecify the IP address to bind to, defaults to INADDR_ANY\n");
     printf("\t-p\tspecify the port to bind to, defaults to 54321\n");
-    printf("\t-c\tspecify an input file to initialize the trie from; works with CIDR prefix + ASN pairs\n");
-    printf("\t-i\tspecify an input database file to initialize the trie from; only works with dumps from -o\n");
-    printf("\t-o\tspecify an output database file to save the trie to upon termination\n");
+    printf("\t-i\tspecify an input file to initialize the trie from\n");
+    printf("\t-o\tspecify an output file to save the trie to upon termination\n");
     printf("\t-d\tenable debug messages; use -dd for more even more messages\n");
     exit(EXIT_FAILURE);
 }
@@ -469,34 +525,35 @@ int __recurseSearch(int wid, struct trienode *root, char *key, int *valuebuf)
 }
 
 /* Prints the trie */
-void print_trie(struct trienode *root)
+void print_trie(FILE *outs, struct trienode *root)
 {
     char *prefix = ""; //Max length of 32-bit int in binary plus null terminator
-    __recursePrint_trie(root, prefix);
+    __recursePrint_trie(outs, root, prefix);
 }
 
-void __recursePrint_trie(struct trienode *root, char *prefix)
+void __recursePrint_trie(FILE *outs, struct trienode *root, char *prefix)
 {
     if(DEBUG > 1) printf("[Handler] Recursive print: checking node at prefix %s\n", prefix);
 
     /* If we have an ASN, print it with our path so far (the prefix) */
     if(root->populated){
         char *printprefix = prefix;
-        if(strcmp(prefix, "") == 0) printprefix = "-";
-        fprintf(outs, "%d\t%s\n", root->ASN, printprefix); // It's backwards because it prints prettier
+        char *cidr = binary_to_prefix(printprefix);
+        fprintf(outs, "%s %d\n", cidr, root->ASN);
+        free(cidr);
     }
 
     if(root->zero != NULL){
         char prefix0[33];
         strcpy(prefix0, prefix);
         strcat(prefix0, "0");
-        __recursePrint_trie(root->zero, prefix0);
+        __recursePrint_trie(outs, root->zero, prefix0);
     }
 
     if(root->one != NULL){
         char prefix1[33];
         strcpy(prefix1, prefix);
         strcat(prefix1, "1");
-        __recursePrint_trie(root->one, prefix1);
+        __recursePrint_trie(outs, root->one, prefix1);
     }
 }
