@@ -187,31 +187,38 @@ void *worker(void *workers)
         /* Read a full XML command (needed in case the network breaks up packets) */
         if(DEBUG) printf("[Worker %d] Waiting for command...\n", wid);
         memset(line, '\0', MAX_LINE_LEN);
+        char lastchar = '\0';
         int numlab = 0;
         int numrab = 0;
         int numslash = 0;
         for(;;){
             if(DEBUG > 1) printf("[Worker %d] linelen: %d\tnumlab: %d\tnumrab: %d\tnumslash: %d\n", wid, (int) strlen(line) + 1, numlab, numrab, numslash);
             if(strlen(line) + 1 >= MAX_LINE_LEN) break; // Break if we have hit the max line length
-            if(numlab != 0 && numlab == numrab && numlab % 2 == 0 && numlab / 2 == numslash) break; // Break if we have a "complete" XML command
-            char nextchar = fgetc(stream);
-            if      (nextchar == '<') numlab++;
-            else if (nextchar == '>') numrab++;
-            else if (nextchar == '/') numslash++;
-            else if (nextchar == EOF){
+            if(numlab != 0 && numlab == numrab && numlab % 2 == 0 && numlab / 2 <= numslash) break; // Break if we have a "complete" XML command
+            char curchar = fgetc(stream);
+            if      (curchar == '<') numlab++;
+            else if (curchar == '>'){
+                numrab++;
+                if (lastchar == '/') numslash++; // Count a slash if it's at the end of a tag
+            }else if(curchar == '/' && lastchar == '<') numslash++; // Count a slash if it's at the start of a tag 
+            else if (curchar == EOF){
                 if(DEBUG) printf("[Worker %d] Got EOF; terminating'\n", wid);
                 pthread_exit(NULL);
+            }else if(curchar == '\n'){
+                if(DEBUG) printf("[Worker %d] Got newline; ignoring\n", wid);
+                break;
             }
-            if(DEBUG > 1) printf("[Worker %d] Got char '%c'\n", wid, nextchar);
-            strcat(line, &nextchar);
+            if(DEBUG > 1) printf("[Worker %d] Got char '%c'\n", wid, curchar);
+            strcat(line, &curchar);
+            lastchar = curchar;
         }
         if(DEBUG) printf("[Worker %d] Got command '%s'\n", wid, line);
 
         /* Parse it as an XML command and perform the requested operation */
         if      (sscanf(line, "<query><ip> %s </ip></query>", ip) == 1) XMLquery(wid, stream, ip);
         else if (sscanf(line, "<entry><cidr> %s </cidr><asn> %d </asn></entry>", ip, &asn) == 2) XMLentry(wid, ip, asn);
-        else if (strncmp(line, "<stats></stats>", 9) == 0) XMLstats(wid, stream);
-        else if (strncmp(line, "<terminate></terminate>", 13) == 0){
+        else if (strncmp(line, "<stats />", 9) == 0) XMLstats(wid, stream);
+        else if (strncmp(line, "<terminate />", 13) == 0){
             printf("[Worker %d] Got termination notice; sending termination signal\n", wid);
             kill(0, SIGINT);
             break;

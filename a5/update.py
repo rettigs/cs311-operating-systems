@@ -64,7 +64,7 @@ def main():
     if stats:
         if debug:
             print 'Querying server for usage statistics'
-        s.send('<stats></stats>')
+        s.send('<stats />')
         if debug:
             print 'Waiting for response from server...'
         line = s.makefile().readline()
@@ -76,7 +76,7 @@ def main():
     if kill:
         if debug:
             print 'Sending kill signal to server'
-        s.send('<terminate></terminate>')
+        s.send('<terminate />')
 
 # Close the connection
     s.close()
