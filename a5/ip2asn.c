@@ -129,14 +129,14 @@ int main(int argc, char *argv[])
         /* Accept the connection and get ready to spin off a worker thread */
         if(DEBUG) printf("[Main] Listening for a client...\n");
         struct sockaddr_in clientaddress;
-        socklen_t addresslen = sizeof(struct sockaddr_in);
+        socklen_t addresslen = sizeof(clientaddress);
         workers[curw].id = curw;
         workers[curw].fd = accept(listenfd, (struct sockaddr *) &clientaddress, &addresslen);
         if(workers[curw].fd == -1) error("Could not accept connection");
 
         /* Add the client's IP to the list of unique hosts if it's not already in it */
         char clientip[MAX_IP_LEN];
-        inet_ntop(AF_INET, &clientaddress.sin_addr.s_addr, clientip, sizeof(*clientip));
+        inet_ntop(AF_INET, &clientaddress.sin_addr.s_addr, clientip, addresslen);
         struct hostnode *hostentry;
         HASH_FIND_STR(hosthash, clientip, hostentry);
         if(hostentry == NULL){ // If it's not already in the hashmap, then add it
@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
         if(DEBUG){
             struct sockaddr_in acceptaddress;
             getsockname(workers[curw].fd, (struct sockaddr *) &acceptaddress, &addresslen);
-            printf("[Main] Worker %d on port %d will be servicing client at host %s\n", curw, acceptaddress.sin_port, clientip);
+            printf("[Main] Worker %d on port %d will be servicing client at host %s\n", curw, ntohs(acceptaddress.sin_port), clientip);
         }
         
         /* Spin off the worker thread */
