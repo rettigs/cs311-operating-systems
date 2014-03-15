@@ -69,10 +69,87 @@
 \section*{Assignment 5 Write-up}
 \hrule
 
+\subsection*{README}
+This README section exists to describe the proper usage of the programs so that they may be tested accordingly.
+
+\subsubsection*{Usage}
+This \LaTeX file and ip2asn.c may be compiled by running \texttt{make} with the provided makefile.  ip2asn.py and update.py should be executable with Python 2.6 or 2.7.
+
+Usage information for each program may be viewed by running it with the -h flag, but will also be listed here for convenience:
+
+\begin{verbatim}
+Usage: ./ip2asn [-h] [-a ipaddress] [-p port] [-c infile] [-i indb] [-o outdb] [-d]...
+    -h  view this help
+    -a  specify the IP address to bind to, defaults to INADDR_ANY
+    -p  specify the port to bind to, defaults to 54321
+    -i  specify an input file to initialize the trie from
+    -o  specify an output file to save the trie to upon termination
+    -d  enable debug messages; use -dd for more even more messages
+
+Usage: ./ip2asn.py [-h] [-a server_ip] [-p port] [-i infile] [-o outfile] [-q query_ip] [-d]...
+    -h  view this help
+    -a  specify the IP address of the server to connect to, defaults to 127.0.0.1
+    -p  specify the port of the server to connect to, defaults to 54321
+    -i  specify an input file of IP addresses to query the server with
+    -o  specify an output file for query results, defaults to stdout; only works with -i
+    -q  query a single IP address; cannot be used with -i
+    -d  enable debug messages; use -dd for more even more messages
+
+Usage: ./update.py [-h] [-a server_ip] [-p port] [-i infile] [-s] [-k] [-d]...
+    -h  view this help
+    -a  specify the IP address of the server to connect to, defaults to 127.0.0.1
+    -p  specify the port of the server to connect to, defaults to 54321
+    -i  specify an input file of CIDR prefixes and ASNs to update the server with
+    -s  enable reporting mode; query server for usage statistics
+    -k  kill the server
+    -d  enable debug messages; use -dd for more even more messages
+\end{verbatim}
+
+For ip2asn.c and update.py, an infile takes the format of a newline-delimited list of (CIDR prefix, ASN) pairs (as in the provided entries1.txt and entries2.txt files).  This is also the format dumped into the outfile for ip2asn.c.  For ip2asn.py, an infile is a newline-delimited list of IPv4 addresses to query the server with (as in the provided queries.txt file), and an outfile will contain a newline-delimited list of (IP, ASN) pairs.
+
+\subsubsection*{Examples}
+A common usage of the ip2asn.c server program:
+\begin{verbatim}
+    ./ip2asn -i database -o database
+\end{verbatim}
+This allows the server to maintain its state between runs, as it initializes the trie from its previous dump.
+
+A common usage of the update.c client program:
+\begin{verbatim}
+    ./update.py -i entries1.txt
+    ./update.py -s
+    ./update.py -si entries2.txt
+    ./update.py -k
+\end{verbatim}
+The -i, -s, and -k flags may all be specified at once, in which case, the insertions happen first, followed by the statistics query, and finally the kill command.
+
+Common usages of the ip2asn.py client program:
+\begin{verbatim}
+./ip2asn.py -q 1.2.3.4
+./ip2asn.py -i queries.txt
+./ip2asn.py -i queries.txt -o outfile
+\end{verbatim}
+The -q and -i flags may not be used together.
+
+Additionally, all programs may be specified to bind/connect to a specific IP address and port.
+\begin{verbatim}
+./ip2asn -i database -o database -a 127.0.0.1 -p 33333
+./update.py -sp 33333
+./ip2asn.py -q 1.2.3.4 -a 128.193.37.168
+\end{verbatim}
+By default, ip2asn.c binds to INADDR\_ANY, while ip2asn.py and update.py connect to 127.0.0.1.  All three use port 54321 by default.
+
+One may also view debugging messages by specifying the -d flag for any program, or -dd for even more verbose output.  Debug output provides an inside look on how the program is functioning.
+\begin{verbatim}
+./ip2asn -i database -o database -d
+./ip2asn -i database -o database -dd
+./update.py -di entries1.txt
+\end{verbatim}
+
 \subsection*{Design}
 \begin{itemize}
-    \item ip2asn.c will use the threaded version of the program from assignment 4 as its base, but rather than creating a predetermined number of workers which all read from stdin, they will be created whenever a new client connects to service that client, and will terminate when the client disconnects.
-    \item ip2asn.c will also be modified to record how many unique hosts have connected, how many queries have been answered, and how many prefixes are stored.  Update: storing unique hosts was done via a hashtable, specified by uthash.h (http://troydhanson.github.io/uthash/).
+    \item ip2asn.c will use the threaded version of the program from assignment 4 as its base, but rather than creating a predetermined number of workers which all read from stdin, they will be created whenever a new client connects to service that client, and will terminate when the client disconnects.  This worker-thread model is intended to satisfy the extra credit requirement.
+    \item ip2asn.c will also be modified to record how many unique hosts have connected, how many queries have been answered, and how many prefixes are stored.  Update: Storing unique hosts was done via a hashtable, specified by uthash.h (http://troydhanson.github.io/uthash/).  This unique-host-tracking model is intended to satisfy the extra credit requirement.
     \item update.py and ip2asn.py will communicate with ip2asn.c via XML, with the commands taking the following forms (sans newlines and indentation):
     \begin{verbatim}
         <entry>
