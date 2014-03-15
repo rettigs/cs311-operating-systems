@@ -353,7 +353,8 @@ int bin2dec(char *binary)
 /* Converts a 32-bit binary prefix in sting format to a CIDR address */
 char *binary_to_prefix(char *binary)
 {
-	char *cidr = malloc(sizeof(char) * 19); // Max length of IPv4 address + slash + 2 digit number + null terminator
+    char *cidr = malloc(sizeof(char) * 19); // Max length of IPv4 address + slash + 2 digit number + null terminator
+    memset(cidr, '\0', sizeof(*cidr));
 
     int len = strlen(binary);
 
@@ -539,6 +540,7 @@ void __recursePrint_trie(FILE *outs, struct trienode *root, char *prefix)
     if(root->populated){
         char *printprefix = prefix;
         char *cidr = binary_to_prefix(printprefix);
+        if(DEBUG) printf("[Handler] Writing prefix '%s' and ASN '%d'\n", cidr, root->ASN);
         fprintf(outs, "%s %d\n", cidr, root->ASN);
         free(cidr);
     }
