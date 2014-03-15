@@ -176,10 +176,15 @@ void *worker(void *workers)
     if(DEBUG) printf("[Worker %d] Opening stream for socket\n", wid);
     FILE *stream = fdopen(((struct workerarg *) workers)->fd, "r+");
 
-    /* Initialize some variables to put scanned values into */
+    /* Initialize some variables */
     char line[MAX_LINE_LEN];
     char ip[MAX_IP_LEN];
     int asn;
+    char curchar;
+    char lastchar;
+    int numlab;
+    int numrab;
+    int numslash;
 
     /* Keep reading XML until we get a "termination" or "done" command */
     for(;;){
@@ -187,15 +192,16 @@ void *worker(void *workers)
         /* Read a full XML command (needed in case the network breaks up packets) */
         if(DEBUG) printf("[Worker %d] Waiting for command...\n", wid);
         memset(line, '\0', MAX_LINE_LEN);
-        char lastchar = '\0';
-        int numlab = 0;
-        int numrab = 0;
-        int numslash = 0;
+        memset(ip, '\0', MAX_IP_LEN);
+        lastchar = 0;
+        numlab = 0;
+        numrab = 0;
+        numslash = 0;
         for(;;){
             if(DEBUG > 1) printf("[Worker %d] linelen: %d\tnumlab: %d\tnumrab: %d\tnumslash: %d\n", wid, (int) strlen(line) + 1, numlab, numrab, numslash);
             if(strlen(line) + 1 >= MAX_LINE_LEN) break; // Break if we have hit the max line length
             if(numlab != 0 && numlab == numrab && numlab % 2 == 0 && numlab / 2 <= numslash) break; // Break if we have a "complete" XML command
-            char curchar = fgetc(stream);
+            curchar = fgetc(stream);
             if      (curchar == '<') numlab++;
             else if (curchar == '>'){
                 numrab++;
@@ -209,7 +215,7 @@ void *worker(void *workers)
                 break;
             }
             if(DEBUG > 1) printf("[Worker %d] Got char '%c'\n", wid, curchar);
-            strcat(line, &curchar);
+            line[strlen(line)] = curchar;
             lastchar = curchar;
         }
         if(DEBUG) printf("[Worker %d] Got command '%s'\n", wid, line);
