@@ -99,6 +99,14 @@
         <terminate></terminate>
     \end{verbatim}
     All XML commands will be terminated by newlines, and when a client is done sending commands, it will send a \begin{verbatim}<done></done>\end{verbatim} command.  Update: Since newlines are entered into the string whenever a packet is broken up, this method did not work.  Rather, I implemented basic character counting (on \(\langle\), \(\rangle\), and /) to parse the XML, allowing me to know when one command ended and the next began, ignoring newlines.  Additonally, I was able to simply read an EOF when the client closed the socket, so the ``done'' command was not necessary.
+    \begin{itemize}
+        \item The entry command is sent from update.py to ip2asn.c to add a new prefix/ASN pair to the trie.
+        \item The query command is sent from ip2asn.py to ip2asn.c to get the ASN of the given IP address.
+        \item The answer command is sent from ip2asn.c to ip2asb.py to return the ASN of the given IP address.
+        \item The empty stats command is sent from update.py to ip2asn.c to query for usage statistics.
+        \item The populated stats command is sent from ip2asn.c to update.py to return usage statistics.
+        \item The terminate command is sent from update.py to ip2asn.c to terminate ip2asn.c; ip2asn.c will send itself a SIGINT signal via kill(), which causes it to dump the trie to the outfile (if one is specified) and terminate.
+    \end{itemize}
 \end{itemize}
 
 \subsection*{Work Log}
@@ -106,7 +114,9 @@
 \end{verbatim}
 \subsection*{Challenges Overcame}
 \begin{itemize}
-    \item
+    \item One challenge I overcame involved very confusing behaviour with the XML parser in ip2asn.c; when I simply added a new variable to hold the previous character, the line buffer started getting multiple characters added to it whenever it received only one; after much debugging, I discovered that I had been using strcat with a single char, rather than a string, causing it to add arbitrary data to the line buffer!  This was easily fixed by simply setting the appropriate position in the buffer to the wanted character rather than using strcat.
+    \item Another challenge I overcame was mentioned earlier as an update of the design; I was originally delimiting XML commands with newlines, unaware that newlines could be automatically added in arbitrary positions in the string as part of the socket connection.  This required me to add additional logic to parse the XML so I could know whether we had a full command or not, and whether to wait for more characters.
+    \item At one point, I realized that the method I had previously been using to dump the trie upon termination did not match what I had to use for input, and that having two different types of input files to specify was silly.  I ended up implementing bin2dec() and binary\_to\_prefix() in addition to dec2bin() and prefix\_to\_binary() to convert the binary prefixes I used to be dumping back into CIDR notation.  However, after implementing it, I noticed that the first line of the output had random, garbled data!  After a bit of debugging, I realized that I needed to zero out the buffer I was using to store the CIDR prefix before using it.
 \end{itemize}
 
 \subsection*{Questions}
