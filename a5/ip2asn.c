@@ -205,19 +205,20 @@ void *worker(void *workers)
             if      (curchar == '<') numlab++;
             else if (curchar == '>'){
                 numrab++;
-                if(DEBUG) printf("[Worker %d] Got '>'; last char was '%c'\n", wid, lastchar);
                 if (lastchar == '/') numslash++; // Count a slash if it's at the end of a tag
             }else if(curchar == '/' && lastchar == '<') numslash++; // Count a slash if it's at the start of a tag 
             else if (curchar == EOF){
-                if(DEBUG) printf("[Worker %d] Got EOF; terminating'\n", wid);
+                if(DEBUG) printf("[Worker %d] Got EOF; terminating\n", wid);
                 pthread_exit(NULL);
-            }else if(curchar == '\n'){
-                if(DEBUG) printf("[Worker %d] Got newline; ignoring\n", wid);
-                break;
             }
-            if(DEBUG > 1) printf("[Worker %d] Got char '%c'\n", wid, curchar);
-            line[strlen(line)] = curchar;
-            lastchar = curchar;
+
+            if(curchar == '\n'){
+                if(DEBUG) printf("[Worker %d] Got newline; ignoring\n", wid);
+            }else{
+                if(DEBUG > 1) printf("[Worker %d] Got char '%c'\n", wid, curchar);
+                line[strlen(line)] = curchar;
+                lastchar = curchar;
+            }
         }
         if(DEBUG) printf("[Worker %d] Got command '%s'\n", wid, line);
 
@@ -294,6 +295,7 @@ void entry(int wid, char *prefix, int ASN)
 char *dec2bin(int decimal)
 {
 	char* ret = malloc(sizeof(char) * 9); // Max length of 8-bit int plus null terminator
+    memset(ret, '\0', sizeof(*ret));
 	int d = decimal;
 	
 	for(int i = 128; i >= 1; i = i/2){
@@ -316,10 +318,12 @@ char *prefix_to_binary(char *prefix)
 	int prefix_length = atoi(slash_spot + 1);
 
 	char *prefix_portion_s = malloc(sizeof(char) * 16); // Max length of IPv4 address + null terminator
+    memset(prefix_portion_s, '\0', sizeof(*prefix_portion_s));
     char *prefix_portion = prefix_portion_s;
     strncpy(prefix_portion, prefix, slash_spot - prefix);
 
 	char *binary_string = malloc(sizeof(char) * 33);
+    memset(binary_string, '\0', sizeof(*binary_string));
 	
 	// A prefix can have a maximum of 4 decimal sets:
 	for (int i = 4; i > 0; --i) {
@@ -455,9 +459,11 @@ void insert(int wid, struct trienode *root, char *key, int value)
             if(wid == -1) printf("[Main] Insert: key length is 0, placing ASN %d at root\n", value);
             else printf("[Worker %d] Insert: key length is 0, placing ASN %d at root\n", wid, value);
         }
-        root->ASN = value;
-        root->populated = 1;
-        prefixes++;
+        if(!root->populated){
+            root->ASN = value;
+            root->populated = 1;
+            prefixes++;
+        }
     }
 }
 
