@@ -72,8 +72,8 @@
 \subsection*{Design}
 \begin{itemize}
     \item ip2asn.c will use the threaded version of the program from assignment 4 as its base, but rather than creating a predetermined number of workers which all read from stdin, they will be created whenever a new client connects to service that client, and will terminate when the client disconnects.
-    \item ip2asn.c will also be modified to record how many unique hosts have connected, how many queries have been answered, and how many prefixes are stored.
-    \item update.py and ip2asn.py will communicate with ip2asn.c via XML, with updates and queries taking the following forms (ignoring whitespace):
+    \item ip2asn.c will also be modified to record how many unique hosts have connected, how many queries have been answered, and how many prefixes are stored.  Update: storing unique hosts was done via a hashtable, specified by uthash.h (http://troydhanson.github.io/uthash/).
+    \item update.py and ip2asn.py will communicate with ip2asn.c via XML, with the commands taking the following forms (sans newlines and indentation):
     \begin{verbatim}
         <entry>
             <cidr> 1.2.3.4/5 </cidr>
@@ -98,6 +98,7 @@
 
         <terminate></terminate>
     \end{verbatim}
+    All XML commands will be terminated by newlines, and when a client is done sending commands, it will send a \begin{verbatim}<done></done>\end{verbatim} command.  Update: Since newlines are entered into the string whenever a packet is broken up, this method did not work.  Rather, I implemented basic character counting (on \(\langle\), \(\rangle\), and /) to parse the XML, allowing me to know when one command ended and the next began, ignoring newlines.  Additonally, I was able to simply read an EOF when the client closed the socket, so the ``done'' command was not necessary.
 \end{itemize}
 
 \subsection*{Work Log}
@@ -110,7 +111,9 @@
 
 \subsection*{Questions}
 \begin{enumerate}
-    \item
+    \item The main purpose of this assignment was to learn the usage and semantics of socket creation and I/O, with secondary purposes being to practice Python and parsing strings/XML.  This was also an exercise in problem solving skills, as this system is the most complex one we have written so far and has lots of minor little details to worry about as well as having the main architecture of the system be largely undefined, requiring us to design and implement it on our own.
+    \item I ensured my solution was correct by testing each program option under various circumstances, such as when the trie is empty, when the trie already has entries, when new entries are being added, when duplicate entries are being added, when input/output files are specified, when multiple clients are connected, whether batch mode or one-off mode is used for queries, when operations (entries, queries, and stat queries) were interleaved and/or performed in different orders, and when multiple options are specified at once, such as -i, -s, and -k all at the same time on update.py.  The README section describes specifically describes tests that can be performed to ensure the system's correctness.
+    \item Obviously, I learned a lot about sockets and Python, given that I had never used sockets before and knew almost no Python; I had to constantly look up even the most basic things about Python, such as how to define functions, how to print, how to format strings, how to catch exceptions, how to check if variables are null/None, how to parse strings using regular expressions, and how to perform file I/O.  Additionally, I learned about parsing my XML commands in a robust enough way to handle being transferred over a network.
 \end{enumerate}
 
 \end{document}
