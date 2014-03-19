@@ -77,13 +77,51 @@ I, \name, hereby state this is my own work, with no help given or received.
 
 \subsubsection*{File I/O}
 
+For basic file I/O, the APIs have nearly identical functionality, and differ mainly in their syntax/usage.  While POSIX species the open(), read(), write(), and close() system calls {[}1{]}, Windows specifies CreateFile(), ReadFile(), WriteFile(), and CloseHandle() {[}2{]} {[}3{]}.  Also, rather than using file descriptors of an integer type (as in POSIX), Windows uses variables of the HANDLE type to refer to open files.  In addition these differences, it is worth noting that the Windows calls are significantly more verbose than the POSIX ones.
+
+As defined by the Linux man pages, open() simply takes a file path and one or more use flags (which can be OR'd together), as well as a file mode if the file is being created.  Windows' CreateFile() (which is also used to open existing files, despite the name), on the other hand, requires a file path, read/write use flag, sharing mode, security attribute struct, file creation use flag, file attributes and other use/security flags, and a handle to a template file.  Granted, some of these arguments can be NULL or simply not used/initialized, but the verbosity still impedes use compared to open(), which condenses the call by allowing many of these arguments to simply be OR'd together in the second argument if they're needed, or completely unspecified if they're not.  For example, compare the usage of CreateFile() in mycopy.c (embedded further below) compared to open():
+\begin{minted}{c}
+/* Windows */
+CreateFile(argv[1], GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+
+/* POSIX */
+open(argv[1], O_RDONLY);
+\end{minted}
+Both accomplish the same task, but CreateFile() is three times as long.  The increased verbosity is a recurring pattern through much of the Windows API; read() and write() simply take a file descriptor/handle, data buffer, and number of bytes to read/write, but ReadFile() and WriteFile() also require a pointer to a variable storing the number of bytes actually read/written, as well as an OVERLAPPED struct if the file was opened with the FILE\_FLAG\_OVERLAPPED flag (though it can be specified as NULL otherwise).  Additionally, ReadFile() and WriteFile() only return a boolean value, so error checking must be performed on two different variables (the return value as well as the number of bytes read/written) to make sure that the call not only did not terminate with an error, but also read/wrote the correct number of bytes.  The read() and write() calls, on the other hand, return the number of bytes read/written, or -1 on an error.  This is a minor simplification, but a welcome one in a situation where there is already plenty of complexity to consider.  For example, consider checking to see if we are at the end of a file (code from mycopy.c):
+\begin{minted}{c}
+/* Windows */
+if(ReadFile(infile, buf, BUFSIZE, &bytesread, NULL) == TRUE && bytesread == 0)
+
+/* POSIX */
+if(read(infile, buf, BUFSIZE) == 0)
+\end{minted}
+Not only is the ReadFile() function physically longer, its return value must be checked to be TRUE (in addition to checking that 0 bytes were read) since bytesread will also be 0 if the function terminates with an error.  The read() call need only check if the number of bytes read was 0.
+
+Writing is similar to reading (code from mycopy.c):
+\begin{minted}{c}
+/* Windows */
+WriteFile(outfile, buf, bytestowrite, &byteswritten, NULL)
+
+/* POSIX */
+byteswritten = write(outfile, buf, bytestowrite)
+\end{minted}
+
+The rare case where the corresponding calls are nearly identical is with closing open files; both close() and closeHandle() both simply take the file descriptor/handle as the sole argument (code from mycopy.c):
+\begin{minted}{c}
+/* Windows */
+CloseHandle(infile);
+
+/* POSIX */
+close(infile);
+\end{minted}
+
 \subsubsection*{Sockets}
 
 \subsubsection*{derp}
 
 \subsection*{Example of Multi-Platform Program: Simple File Copy Tool}
 
-The following program is also defined in mycopy.c and is bundled with a makefile for compiling on Linux/Unix and an exe for use on Windows (compiled and tested on 64-bit Windows 7 Professional).  Follows C99 standard.
+The following program is also defined in mycopy.c and is bundled with a makefile for compiling on Linux/Unix and an exe for use on Windows (compiled and tested on 64-bit Windows 7 Professional).
 
 \begin{minted}{c}
 #include <stdio.h>
@@ -205,5 +243,15 @@ int main(int argc, char *argv[])
     exit(EXIT_SUCCESS);
 }
 \end{minted}
+
+\subsection*{References}
+
+\begin{itemize}
+    \item[{[}1{]}] Linux man pages: http://man7.org/linux/man-pages/
+    \item[{[}2{]}] MSDN Library - File Management Functions: http://msdn.microsoft.com/en-us/library/aa364232.aspx
+    \item[{[}3{]}] MSDN Library - Handle and Object Functions: http://msdn.microsoft.com/en-us/library/ms724461.aspx
+    \item[{[}4{]}] MSDN Library - : 
+    \item[{[}5{]}] MSDN Library - : 
+\end{itemize}
 
 \end{document}
