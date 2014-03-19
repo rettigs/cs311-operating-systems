@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
     HANDLE outfile = CreateFile(argv[2], GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 #else
 	int infile = open(argv[1], O_RDONLY);
-	int infile = open(argv[2], O_WRONLY | O_TRUNC | O_CREAT, 0664);
+	int outfile = open(argv[2], O_WRONLY | O_TRUNC | O_CREAT, 0664);
 #endif
 	
 #ifndef NOFILE
