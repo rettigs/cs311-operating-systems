@@ -9,11 +9,13 @@ LDFLAGS = -lrt -lpthread -lm
 TARGET1 = mycopy
 TARGET2 = server_posix
 TARGET3 = client_posix
+TARGET4 = pipe_posix
 
 c:
 	${CC} ${CFLAGS} ${TARGET1}.c -o ${TARGET1} ${LDFLAGS}
 	${CC} ${CFLAGS} ${TARGET2}.c -o ${TARGET2} ${LDFLAGS}
 	${CC} ${CFLAGS} ${TARGET3}.c -o ${TARGET3} ${LDFLAGS}
+	${CC} ${CFLAGS} ${TARGET4}.c -o ${TARGET4} ${LDFLAGS}
 
 
 # Makes LaTeX into a PDF
