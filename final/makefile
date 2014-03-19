@@ -2,7 +2,7 @@ default: pdf c
 
 # Compiles C code
 
-CC = gcc
+CC = icc
 CFLAGS = -Wall -std=c99 -openmp -O0 -g -I.
 LDFLAGS = -lrt -lpthread -lm
 
@@ -22,18 +22,22 @@ dvi: ${LATEXTARGET}.tex
 #	pygmentize the input source file -- THIS NAME SHOULD BE SAFE
 #	pygmentize -f latex -o __${LATEXTARGET}.tex ${LATEXTARGET}.tex
 #	run latex twice to get references correct
-	latex ${LATEXTARGET}.tex
+	latex -shell-escape ${LATEXTARGET}.tex
 #	you can also have a bibtex line here
 #	bibtex $(LATEXTARGET)
-	latex $(LATEXTARGET).tex
-#	remove the pygmentized output to avoid cluttering up the directory
-#	rm __${LATEXTARGET}.tex
+#	latex $(LATEXTARGET).tex
+#	remove intermediate outputs to avoid cluttering up the directory
+	rm ${LATEXTARGET}.aux ${LATEXTARGET}.out ${LATEXTARGET}.log
 
 ps: dvi
 	dvips -R -Poutline -t letter ${LATEXTARGET}.dvi -o ${LATEXTARGET}.ps
+#	remove intermediate outputs to avoid cluttering up the directory
+	rm ${LATEXTARGET}.dvi
 
 pdf: ps
 	ps2pdf ${LATEXTARGET}.ps
+#	remove intermediate outputs to avoid cluttering up the directory
+	rm ${LATEXTARGET}.ps
 
 
 html:
@@ -45,4 +49,3 @@ html:
 	mv ${HTML}/index2.html ${LATEXTARGET}.html
 	rm ${HTML}.*
 	rm -rf ${HTML}
-
