@@ -164,7 +164,29 @@ byteswritten = write(sockfd, buf, bytesread);
 \end{minted}
 As shown above, the usage of recv() and read() (as well as send() and write()) are almost identical, with the only difference being that recv() and send() take an additional 4th argument for use flags for how the data should be received or sent (e.g. the MSG\_PEEK flag for recv(), which reads from the socket without modifying what's in its buffer).
 
-\subsubsection*{derp}
+\subsubsection*{Pipes}
+Pipes, both regular/anonymous pipes and FIFOs/named pipes, are handled quite differently between the POSIX and Windows APIs.  POSIX specifies the pipe() and mkfifo() calls {[}1{]}, while the Windows API specifies CreatePipe() and CreateNamedPipe() {[}5{]}.  Both types of pipes allow reading and writing through the standard file I/O calls (read()/write() and ReadFile()/WriteFile()).  As normal, the Windows calls are more verbose; pipe() simply requires two file descriptor pointers, whereas CreatePipe() also requires a security attributes struct and a pipe buffer size (code from pipe\_windows.c and pipe\_posix.c):
+\begin{minted}{c}
+/* Windows */
+HANDLE pipefd_r = INVALID_HANDLE_VALUE;
+HANDLE pipefd_w = INVALID_HANDLE_VALUE;
+CreatePipe(&pipefd_r, &pipefd_w, NULL, BUFSIZE);
+
+/* POSIX */
+int pipefd[2];
+pipe(pipefd);
+\end{minted}
+Even worse, however, are FIFOs, or named pipes (code from pipe\_windows.c and pipe\_posix.c):
+\begin{minted}{c}
+/* Windows */
+HANDLE npipe = CreateNamedPipe  (NPIPE_PATH, PIPE_ACCESS_DUPLEX,
+                                PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
+                                PIPE_UNLIMITED_INSTANCES, BUFSIZE, BUFSIZE, 0, NULL);
+
+/* POSIX */
+mkfifo(FIFO_PATH, 0660);
+\end{minted}
+These calls create similar pipes, but the POSIX one is less than one tenth of the length of the Windows one!  Combine that with the open call for the pipe and your fingers are going to cramping up before you know it.
 
 \subsection*{Example of Multi-Platform Program: Simple File Copy Tool}
 
@@ -298,7 +320,7 @@ int main(int argc, char *argv[])
     \item[{[}2{]}] MSDN Library - File Management Functions: http://msdn.microsoft.com/en-us/library/aa364232.aspx
     \item[{[}3{]}] MSDN Library - Handle and Object Functions: http://msdn.microsoft.com/en-us/library/ms724461.aspx
     \item[{[}4{]}] MSDN Library - Winsock Functions: http://msdn.microsoft.com/en-us/library/windows/desktop/ms741394.aspx
-    \item[{[}5{]}] MSDN Library - : 
+    \item[{[}5{]}] MSDN Library - Pipe Functions: http://msdn.microsoft.com/en-us/library/windows/desktop/aa365781.aspx
 \end{itemize}
 
 \end{document}
