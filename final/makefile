@@ -36,7 +36,8 @@ ps: dvi
 pdf: ps
 	ps2pdf ${LATEXTARGET}.ps
 #	remove intermediate outputs to avoid cluttering up the directory
-	rm ${LATEXTARGET}.aux ${LATEXTARGET}.out ${LATEXTARGET}.log ${LATEXTARGET}.dvi ${LATEXTARGET}.ps ${LATEXTARGET}.bbl ${LATEXTARGET}.blg
+	rm ${LATEXTARGET}.aux ${LATEXTARGET}.out ${LATEXTARGET}.log ${LATEXTARGET}.dvi ${LATEXTARGET}.ps
+#	rm ${LATEXTARGET}.bbl ${LATEXTARGET}.blg
 
 html:
 	cp ${LATEXTARGET}.tex ${HTML}.tex
