@@ -25,20 +25,18 @@ dvi: ${LATEXTARGET}.tex
 	latex -shell-escape ${LATEXTARGET}.tex
 #	you can also have a bibtex line here
 #	bibtex $(LATEXTARGET)
-#	latex $(LATEXTARGET).tex
-#	remove intermediate outputs to avoid cluttering up the directory
-	rm ${LATEXTARGET}.aux ${LATEXTARGET}.out ${LATEXTARGET}.log
+#	latex -shell-escape ${LATEXTARGET}.tex
+#	remove the pygmentized output to avoid cluttering up the directory
+#	rm __${TARGET}.tex
 
 ps: dvi
 	dvips -R -Poutline -t letter ${LATEXTARGET}.dvi -o ${LATEXTARGET}.ps
 #	remove intermediate outputs to avoid cluttering up the directory
-	rm ${LATEXTARGET}.dvi
 
 pdf: ps
 	ps2pdf ${LATEXTARGET}.ps
 #	remove intermediate outputs to avoid cluttering up the directory
-	rm ${LATEXTARGET}.ps
-
+	rm ${LATEXTARGET}.aux ${LATEXTARGET}.out ${LATEXTARGET}.log ${LATEXTARGET}.dvi ${LATEXTARGET}.ps ${LATEXTARGET}.bbl ${LATEXTARGET}.blg
 
 html:
 	cp ${LATEXTARGET}.tex ${HTML}.tex
