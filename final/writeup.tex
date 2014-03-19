@@ -93,7 +93,13 @@ The following program is also defined in mycopy.c and is bundled with a makefile
 #   include <strsafe.h>
 
 #   ifndef WIN
-#       define WIN /* Define convenience variable */
+#       define WIN /* Convenience variable */
+#   endif
+#   ifndef BCOUNT
+#       define BCOUNT DWORD /* How to store byte count */
+#   endif
+#   ifndef FTYPE
+#       define FTYPE HANDLE /* How to store open file references */
 #   endif
 #elif defined __unix__ /* Support UNIX/Linux */
 #   include <sys/types.h>
@@ -101,10 +107,16 @@ The following program is also defined in mycopy.c and is bundled with a makefile
 #   include <fcntl.h>
 #   include <stdlib.h>
 #   include <unistd.h>
+
+#   ifndef BCOUNT
+#       define BCOUNT ssize_t /* How to store byte count */
+#   endif
+#   ifndef FTYPE
+#       define FTYPE int /* How to store open file references */
+#   endif
 #else /* Nothing else is supported */
 #   error "Unsupported platform"
 #endif
-
 #ifndef BUFSIZE
 #   define BUFSIZE 4096
 #endif
@@ -127,33 +139,27 @@ void error(char *message)
     exit(EXIT_FAILURE);
 }
 
-/* Copies the file at argv[1] to the file at argv[2] in increments of BUFSIZE */
+/* Copy the file at argv[1] to the file at argv[2] in increments of BUFSIZE */
 #ifdef WIN
 int __cdecl _tmain(int argc, TCHAR *argv[])
 #else
 int main(int argc, char *argv[])
 #endif
 {
+    FTYPE infile, outfile;
+    BCOUNT bytesread, byteswritten;
+    char buf[BUFSIZE];
+
     if(argc != 3) usage();
-    
+
 #ifdef WIN
-    HANDLE infile = CreateFile( argv[1],
-                                GENERIC_READ,
-                                FILE_SHARE_READ,
-                                NULL,
-                                OPEN_EXISTING,
-                                0,
-                                NULL);
-    HANDLE outfile = CreateFile(argv[2],
-                                GENERIC_WRITE,
-                                0,
-                                NULL,
-                                CREATE_ALWAYS,
-                                FILE_ATTRIBUTE_NORMAL,
-                                NULL);
+    infile = CreateFile (argv[1], GENERIC_READ, FILE_SHARE_READ,
+                         NULL, OPEN_EXISTING, 0, NULL);
+    outfile = CreateFile(argv[2], GENERIC_WRITE, 0,
+                         NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 #else
-    int infile = open(argv[1], O_RDONLY);
-    int outfile = open(argv[2], O_WRONLY | O_TRUNC | O_CREAT, 0664);
+    infile = open(argv[1], O_RDONLY);
+    outfile = open(argv[2], O_WRONLY | O_TRUNC | O_CREAT, 0664);
 #endif
     
 #ifndef NOFILE
@@ -164,23 +170,8 @@ int main(int argc, char *argv[])
 #   endif
 #endif
 
-    if(infile == NOFILE)
-        error("Could not open input file");
-    if(outfile == NOFILE)
-        error("Could not open output file");
-
-    char buf[BUFSIZE];
-
-#ifndef BCOUNT
-#   ifdef WIN
-#       define BCOUNT DWORD
-#   else
-#       define BCOUNT ssize_t
-#   endif
-#endif
-
-    BCOUNT bytesread;
-    BCOUNT byteswritten;
+    if(infile == NOFILE) error("Could not open input file");
+    if(outfile == NOFILE) error("Could not open output file");
 
     for(;;){
 #ifdef WIN
@@ -198,7 +189,6 @@ int main(int argc, char *argv[])
             if((byteswritten = write(outfile, buf, bytesread)) == -1)
 #endif
                 error("Could not write to output file");
-            
             if(byteswritten != bytesread)
                 error("Could not write whole buffer to output file");
         }
