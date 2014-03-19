@@ -188,6 +188,223 @@ One may also view debugging messages by specifying the -d flag for any program, 
 
 \subsection*{Work Log}
 \begin{verbatim}
+commit fd0c85da4c522ac2b85af80b8b8049a9c5263957
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 23:32:51 2014 -0700
+
+    ip2asn.c: increase max workers
+
+commit f0bc3f80f2e4bc5bff4cf5d0ae6b22376b2cabc1
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 23:12:57 2014 -0700
+
+    add testing files
+
+commit 522a8ae08b9e3411ef12cced571cbc0b3a60533b
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 23:10:48 2014 -0700
+
+    writeup: add readme and usage information
+
+commit 8d1771b62e8ab3e12c495862f3c7700ee8771a2a
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 23:10:16 2014 -0700
+
+    update.py: update help
+
+commit 6b4517c747fd42e3303303c9aa0c3689daaf9215
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 23:09:50 2014 -0700
+
+    ip2asn.c: don't exit on nonexistent input file
+
+commit fabadf18417452ea776967308f64272ae401acf2
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 22:21:36 2014 -0700
+
+    writeup: add challenges overcome and extra command documentation
+
+commit 22ed85648e8aed0cabd635784074bad2e045041f
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 21:18:05 2014 -0700
+
+    Updating design and answering questions in writeup
+
+commit 67463162764b9badad73311254b0b0eb03a47f41
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 20:43:17 2014 -0700
+
+    ip2asn.c: actually fix newlines, and zero out buffers before using them
+
+commit 4186746ca69866c8ffea121be612f1beea5d00a1
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 19:52:02 2014 -0700
+
+    ip2asn.c: fix ip and port representations
+
+commit 40c20ffff43eb5619f1d5018fbf465c3950a8cdb
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 19:39:12 2014 -0700
+
+    I guess I can't parse self-closing tags after all
+
+commit f1b9421aa9668e8ab65f90ce80a7a8908aacfcef
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 19:15:19 2014 -0700
+
+    ip2asn.c: fix char concat bug, initialize variables only once for performance
+
+commit 08b6de08df3c4a0d1c8df517280ec4badafb7452
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 18:43:05 2014 -0700
+
+    fix slashes in CIDR prefixes getting parsed, fix newlines getting parsed, let self-closing tags get parsed again
+
+commit 045952194a2da8e02adc2023c7b08851cb50d902
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 18:19:00 2014 -0700
+
+    ip2asn.c: fixing random data write bug
+
+commit 041f47c5210495bc2d22fe8c9a68d014f6503cf9
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 18:02:08 2014 -0700
+
+    ip2asn.c: out format now matches in format, same file can be used for both, memory leak with insert/entry fixed
+
+commit f55f8b35a405057ed535b6e8a89b30731e5899aa
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 16:35:15 2014 -0700
+
+    ip2asn.c: can now handle packet breakups and client crashes, and has fixed usage info formatting
+
+commit 229ef5ca97af0ea55a0f94cc2dd0ceb227bf4bf8
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 16:33:39 2014 -0700
+
+    use spaces because it makes things easier to parse
+
+commit d8f8e53018a94c7354a42efe80a0fa4a55947e5e
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 16:30:57 2014 -0700
+
+    Revert "use self-closing XML tags when ideal" (self-closing tags are harder to parse)
+    
+    This reverts commit b95d75af94665a67a968158c889658ea81b27b74.
+
+commit 48ae17a063d8b94443664c17d44729f6887ba9ae
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 01:13:07 2014 -0700
+
+    adding field numbers to formatted strings for python 2.6 compatibility
+
+commit 18d8f5c2303d0f630f8f6528a49deb3045970226
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 00:53:09 2014 -0700
+
+    update.py: mostly done
+
+commit 577bc663fa30127f8c03632bb9d8809756a762a8
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 00:52:37 2014 -0700
+
+    ip2asn.py: exit with proper exit code
+
+commit d3ce4d5c9f6ea1cd9707a1aa733d2ad653573c58
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 00:52:18 2014 -0700
+
+    ip2asn.c: fixing derp syntax error
+
+commit 2ba9a968accafea5c0bfa6ec2801ddae51bc3e49
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Fri Mar 14 00:47:42 2014 -0700
+
+    adding uthash.h to repo
+
+commit 03689ead3dc117638f6ac8fab2177233ded6af21
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Mar 13 23:47:51 2014 -0700
+
+    begin update.py, add additional usage information to all programs for the -h flag
+
+commit 60b863fb1b5c0b2fe5ad4a5f8293029511b9d39c
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Mar 13 23:22:23 2014 -0700
+
+    makes threads terminate once the client is done, improve output formatting, add debug message on invalid command
+
+commit aa19807c5e04bc0c96f890f6cfdd41bb921de941
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Mar 13 21:37:37 2014 -0700
+
+    ip2asn.c and ip2asn.py are now working properly
+
+commit dbc7e5a7408a10c842795e88bb0a66ff55e54c36
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Thu Mar 13 05:58:06 2014 -0700
+
+    done with initial creation of ip2asn.py, still needs testing
+
+commit d04db14a7f83d6639176f9e47d32bfb660065bb3
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 12 22:45:08 2014 -0700
+
+    ip2asn.c: fixing some bugs that occur up to listening for clients; need to make clients to test further
+
+commit a4da57672a64c95743641232e0c291dda0c9cf55
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 12 22:12:04 2014 -0700
+
+    fixing compile errors for ip2asn.c
+
+commit f1a18d70c45d7e96376f5683226eb629bcb89ac1
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 12 21:15:01 2014 -0700
+
+    ip2asn.c theoretically done, still requires testing
+
+commit 89c9022a8ede7ebfa8b537dd168726f5167f2b7d
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 12 20:51:25 2014 -0700
+
+    ip2asn.c now stores usage statistics
+
+commit abbe588482e18bcdc8053894246d27d2254aaafc
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 12 19:25:22 2014 -0700
+
+    send self SIGINT instead of SIGSTOP
+
+commit a9c823a9c94d05d7b0871905bdd1bb7f7c953bb7
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 12 19:22:44 2014 -0700
+
+    ip2asn XML handling framework implemented, still needs nitty-gritty
+
+commit 34c6cf1471bc002abc39cf95c5c3720d101f08d1
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 12 19:02:53 2014 -0700
+
+    ip2asn.c has everything except XML parsing now
+
+commit b95d75af94665a67a968158c889658ea81b27b74
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 12 18:40:52 2014 -0700
+
+    use self-closing XML tags when ideal
+
+commit 1d74d8a8a23dabca3c777efef203f83b07116eb5
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Wed Mar 12 12:20:27 2014 -0700
+
+    done with initial design in writeup
+
+commit d7ac34e4f87d311237f49724dd5c0a3358648368
+Author: Sean Rettig <seanrettig@gmail.com>
+Date:   Mon Mar 10 15:17:35 2014 -0700
+
+    Initial commit of files I will be working with
 \end{verbatim}
 \subsection*{Challenges Overcame}
 \begin{itemize}

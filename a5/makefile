@@ -2,7 +2,7 @@ default: pdf c
 
 # Compiles C code
 
-CC = gcc
+CC = icc
 CFLAGS = -Wall -std=c99 -openmp -O0 -g -I.
 LDFLAGS = -lrt -lpthread -lm
 
