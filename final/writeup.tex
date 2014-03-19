@@ -77,7 +77,7 @@ I, \name, hereby state this is my own work, with no help given or received.
 
 \subsubsection*{File I/O}
 
-For basic file I/O, the APIs have nearly identical functionality, and differ mainly in their syntax/usage.  While POSIX species the open(), read(), write(), and close() system calls {[}1{]}, Windows specifies CreateFile(), ReadFile(), WriteFile(), and CloseHandle() {[}2{]} {[}3{]}.  Also, rather than using file descriptors of an integer type (as in POSIX), Windows uses variables of the HANDLE type to refer to open files.  In addition these differences, it is worth noting that the Windows calls are significantly more verbose than the POSIX ones.
+For basic file I/O, the APIs have nearly identical functionality, and differ mainly in their syntax/usage.  While POSIX specifies the open(), read(), write(), and close() system calls {[}1{]}, the Windows API specifies CreateFile(), ReadFile(), WriteFile(), and CloseHandle() {[}2{]} {[}3{]}.  Also, rather than using file descriptors of an integer type (as in POSIX), Windows uses variables of the HANDLE type to refer to open files.  In addition these differences, it is worth noting that the Windows calls are significantly more verbose than the POSIX ones.
 
 As defined by the Linux man pages, open() simply takes a file path and one or more use flags (which can be OR'd together), as well as a file mode if the file is being created.  Windows' CreateFile() (which is also used to open existing files, despite the name), on the other hand, requires a file path, read/write use flag, sharing mode, security attribute struct, file creation use flag, file attributes and other use/security flags, and a handle to a template file.  Granted, some of these arguments can be NULL or simply not used/initialized, but the verbosity still impedes use compared to open(), which condenses the call by allowing many of these arguments to simply be OR'd together in the second argument if they're needed, or completely unspecified if they're not.  For example, compare the usage of CreateFile() in mycopy.c (embedded further below) compared to open():
 \begin{minted}{c}
@@ -116,6 +116,53 @@ close(infile);
 \end{minted}
 
 \subsubsection*{Sockets}
+The sockets APIs for POSIX and Windows are actually surprisingly similar compared to how different they were for file I/O, the main difference being that rather than integer file descriptors or even HANDLEs, the Windows Winsock2 API functions use variables of the SOCKET type.  POSIX specifies the socket(), bind(), listen(), accept(), connect(), and close() functions {[}1{]}for performing basic socket operations, while the Winsock API specifies the same ones (save for close(), which is called closesocket() in Winsock) {[}4{]}.
+
+These functions all take similar arguments and have similar return values; for example, both versions of socket() take a domain (such as AF\_INET), a type (such as SOCK\_STREAM), and a protocol (e.g. TCP/IPPROTO\_TCP, protocol number 6).  Since most common types only have one protocol, both functions support leaving the protocol argument at 0.  Both functions also return a reference to the socket (POSIX as an integer file descriptor, Winsock as a SOCKET), or -1 on error.  Example usage of socket code (code from server\_windows.c, client\_windows.c, server\_posix.c, and client\_posix.c):
+\begin{minted}{c}
+/* Windows server */
+WSADATA wsaData;
+WSAStartup(MAKEWORD(2, 2), &wsaData);
+
+SOCKET listens = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+bind(listens, (struct sockaddr *) &srvaddr, addrlen);
+listen(listens, BACKLOG);
+SOCKET socks = accept(listens, (struct sockaddr *) &cliaddr, &addrlen);
+closesocket(socks);
+closesocket(listens);
+
+/* Windows client */
+WSADATA wsaData;
+WSAStartup(MAKEWORD(2, 2), &wsaData);
+
+SOCKET socks = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+connect(socks, (struct sockaddr *) &srvaddr, addrlen);
+closesocket(socks);
+
+/* POSIX server*/
+int listenfd = socket(AF_INET, SOCK_STREAM, 0);
+bind(listenfd, (struct sockaddr *) &srvaddr, addrlen);
+listen(listenfd, BACKLOG);
+int sockfd = accept(listenfd, (struct sockaddr *) &cliaddr, &addrlen);
+close(listenfd);
+close(sockfd);
+
+/* POSIX client */
+int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+connect(sockfd, (struct sockaddr *) &srvaddr, addrlen);
+close(sockfd);
+\end{minted}
+The only real difference between the POSIX and Windows APIs here is that Windows needs to "initialize" Winsock before any connections can be made, though this difference is fairly trivial.  It is worth noting, however, that by default, the standard file reading and writing functions on Windows do not work with SOCKETs; rather, recv() and send() {[}4{]} should be used.  In terms of syntax and usage, they more closely resemble read() and write() from the POSIX API than ReadFile() and WriteFile() from the Windows API (code from server\_windows.c and server\_posix.c):
+\begin{minted}{c}
+/* Windows */
+bytesread = recv(socks, buf, BUFSIZE, 0);
+byteswritten = send(socks, buf, bytesread, 0);
+
+/* POSIX */
+bytesread = read(sockfd, buf, BUFSIZE);
+byteswritten = write(sockfd, buf, bytesread);
+\end{minted}
+As shown above, the usage of recv() and read() (as well as send() and write()) are almost identical, with the only difference being that recv() and send() take an additional 4th argument for use flags for how the data should be received or sent (e.g. the MSG\_PEEK flag for recv(), which reads from the socket without modifying what's in its buffer).
 
 \subsubsection*{derp}
 
@@ -250,7 +297,7 @@ int main(int argc, char *argv[])
     \item[{[}1{]}] Linux man pages: http://man7.org/linux/man-pages/
     \item[{[}2{]}] MSDN Library - File Management Functions: http://msdn.microsoft.com/en-us/library/aa364232.aspx
     \item[{[}3{]}] MSDN Library - Handle and Object Functions: http://msdn.microsoft.com/en-us/library/ms724461.aspx
-    \item[{[}4{]}] MSDN Library - : 
+    \item[{[}4{]}] MSDN Library - Winsock Functions: http://msdn.microsoft.com/en-us/library/windows/desktop/ms741394.aspx
     \item[{[}5{]}] MSDN Library - : 
 \end{itemize}
 
